@@ -33,11 +33,19 @@ docker compose -f db/docker-compose.yml up -d
 ```
 
 This starts Postgres 16 on `localhost:5432` (user/password/db: `cartmind`/`cartmind`/`cartmind`),
-matching the default `DATABASE_URL` in `apps/api/.env.example`. No schema is
-applied yet — migrations land in a later phase.
+matching the default `DATABASE_URL` in `apps/api/.env.example`.
 
 To stop it: `docker compose -f db/docker-compose.yml down` (add `-v` to also
 drop the data volume).
+
+### Run migrations
+
+```bash
+npm run db:migrate
+```
+
+Applies any `.sql` files in `db/migrations` that haven't run yet, tracked in a
+`schema_migrations` table. Requires `DATABASE_URL` to be set (via `apps/api/.env`).
 
 ### Start the apps
 
@@ -66,7 +74,7 @@ Health check: `GET http://localhost:4000/api/v1/health`
   /shared-types    Shared TS types (event payloads, DB models, API response envelope)
 /db
   docker-compose.yml   Local PostgreSQL 16 container
-  /migrations          SQL migration files (empty for now)
+  /migrations          SQL migration files
   /seed                Seed scripts for demo data (empty for now)
 /docs                  Architecture diagrams, API docs, setup notes
 ```
