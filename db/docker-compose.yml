@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cartmind-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cartmind
+      POSTGRES_PASSWORD: cartmind
+      POSTGRES_DB: cartmind
+    ports:
+      - "5432:5432"
+    volumes:
+      - cartmind_pgdata:/var/lib/postgresql/data
+
+volumes:
+  cartmind_pgdata:
