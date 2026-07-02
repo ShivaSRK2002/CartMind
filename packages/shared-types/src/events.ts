@@ -12,72 +12,71 @@ export const BEHAVIORAL_EVENTS = [
 
 export type BehavioralEventName = (typeof BEHAVIORAL_EVENTS)[number];
 
-export interface BaseEventProperties {
-  userId: string;
-  sessionId: string;
-  timestamp: string;
+export interface CartLineItem {
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
 }
 
-export interface ProductViewedEvent extends BaseEventProperties {
+export interface ProductViewedPayload {
   productId: string;
   productName: string;
   category: string;
   price: number;
 }
 
-export interface AddToCartEvent extends BaseEventProperties {
+export interface AddToCartPayload {
   productId: string;
   productName: string;
   price: number;
   quantity: number;
 }
 
-export interface RemoveFromCartEvent extends BaseEventProperties {
+export interface RemoveFromCartPayload {
   productId: string;
   quantity: number;
 }
 
-export interface CheckoutStartedEvent extends BaseEventProperties {
-  cartId: string;
-  cartValue: number;
+export interface CheckoutStartedPayload {
+  items: CartLineItem[];
+  totalAmount: number;
+}
+
+export interface PaymentSuccessPayload {
+  orderId: string;
+  totalAmount: number;
   itemCount: number;
 }
 
-export interface PaymentSuccessEvent extends BaseEventProperties {
-  orderId: string;
-  amount: number;
-  paymentMethod: string;
-}
-
-export interface WishlistAddEvent extends BaseEventProperties {
+export interface WishlistAddPayload {
   productId: string;
-  productName: string;
 }
 
-export interface CouponAppliedEvent extends BaseEventProperties {
+export interface CouponAppliedPayload {
   couponCode: string;
   discountAmount: number;
 }
 
-export interface SearchQueryEvent extends BaseEventProperties {
+export interface SearchQueryPayload {
   query: string;
   resultCount: number;
 }
 
-export interface CheckoutAbandonedEvent extends BaseEventProperties {
-  cartId: string;
-  cartValue: number;
-  lastStep: string;
+export interface CheckoutAbandonedPayload {
+  items: CartLineItem[];
+  totalAmount: number;
+  stage: string;
 }
 
 export interface BehavioralEventPayloadMap {
-  product_viewed: ProductViewedEvent;
-  add_to_cart: AddToCartEvent;
-  remove_from_cart: RemoveFromCartEvent;
-  checkout_started: CheckoutStartedEvent;
-  payment_success: PaymentSuccessEvent;
-  wishlist_add: WishlistAddEvent;
-  coupon_applied: CouponAppliedEvent;
-  search_query: SearchQueryEvent;
-  checkout_abandoned: CheckoutAbandonedEvent;
+  product_viewed: ProductViewedPayload;
+  add_to_cart: AddToCartPayload;
+  remove_from_cart: RemoveFromCartPayload;
+  checkout_started: CheckoutStartedPayload;
+  payment_success: PaymentSuccessPayload;
+  wishlist_add: WishlistAddPayload;
+  coupon_applied: CouponAppliedPayload;
+  search_query: SearchQueryPayload;
+  checkout_abandoned: CheckoutAbandonedPayload;
 }
