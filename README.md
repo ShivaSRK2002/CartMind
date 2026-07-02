@@ -44,8 +44,20 @@ drop the data volume).
 npm run db:migrate
 ```
 
-Applies any `.sql` files in `db/migrations` that haven't run yet, tracked in a
-`schema_migrations` table. Requires `DATABASE_URL` to be set (via `apps/api/.env`).
+Applies any `.sql` files in `db/migrations` that haven't run yet, via
+[node-pg-migrate](https://github.com/salsita/node-pg-migrate) (tracked in its
+`pgmigrations` table). Requires `DATABASE_URL` to be set (via `apps/api/.env`).
+To roll back the most recent migration: `npm run migrate:down --workspace=apps/api`.
+
+### Seed demo data
+
+```bash
+npm run db:seed
+```
+
+Inserts 5 demo users (`admin@cartmind.ai` + 4 customers, password `password123`
+for all) and 30 demo products across 5 categories. Safe to re-run — it
+truncates dependent tables first.
 
 ### Start the apps
 
@@ -74,8 +86,8 @@ Health check: `GET http://localhost:4000/api/v1/health`
   /shared-types    Shared TS types (event payloads, DB models, API response envelope)
 /db
   docker-compose.yml   Local PostgreSQL 16 container
-  /migrations          SQL migration files
-  /seed                Seed scripts for demo data (empty for now)
+  /migrations          SQL migration files (node-pg-migrate)
+  /seed                Seed data (5 demo users, 30 demo products)
 /docs                  Architecture diagrams, API docs, setup notes
 ```
 
