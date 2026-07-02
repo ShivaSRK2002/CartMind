@@ -76,6 +76,23 @@ npm run dev:api   # Express API on http://localhost:4000
 
 Health check: `GET http://localhost:4000/api/v1/health`
 
+## Authentication
+
+JWT-based, no paid Firebase tier. `apps/api` issues tokens on register/login;
+`apps/web` stores them in an httpOnly cookie set by its own route handlers
+(`app/api/auth/*`), so the raw token never reaches client-side JS.
+
+- `JWT_SECRET` **must be the same value** in `apps/api/.env` and
+  `apps/web/.env.local` — the API signs tokens, the web app's middleware and
+  session helper verify them independently.
+- Customer flows: `/register`, `/login`.
+- Admin flow: `/admin/login` — rejects credentials for non-admin accounts.
+  `middleware.ts` guards all `/admin/**` routes, redirecting to `/admin/login`
+  if there's no valid admin session.
+- Seeded accounts (after `npm run db:seed`): `admin@cartmind.ai` (admin) and
+  `alice@example.com` / `bob@example.com` / `carol@example.com` /
+  `dave@example.com` (customers), password `password123` for all.
+
 ## Folder structure
 
 ```
