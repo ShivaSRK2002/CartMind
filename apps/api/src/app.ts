@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { healthRouter } from "./routes/health.route";
+import { errorHandler } from "./middleware/errorHandler";
 
 export function createApp() {
   const app = express();
@@ -8,7 +9,9 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  app.use("/health", healthRouter);
+  app.use("/api/v1/health", healthRouter);
+
+  app.use(errorHandler);
 
   return app;
 }
