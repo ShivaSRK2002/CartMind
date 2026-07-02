@@ -4,40 +4,27 @@ export interface User {
   id: string;
   email: string;
   passwordHash: string;
+  name: string;
+  role: "customer" | "admin";
   createdAt: string;
 }
 
 export interface Product {
   id: string;
   name: string;
-  category: string;
+  description: string | null;
   price: number;
+  category: string;
   imageUrl: string | null;
-  createdAt: string;
-}
-
-export interface Cart {
-  id: string;
-  userId: string;
-  status: "active" | "converted" | "abandoned";
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CartItem {
-  id: string;
-  cartId: string;
-  productId: string;
-  quantity: number;
-  priceAtAdd: number;
+  stock: number;
   createdAt: string;
 }
 
 export interface Order {
   id: string;
   userId: string;
-  totalAmount: number;
   status: "pending" | "paid" | "cancelled";
+  totalAmount: number;
   createdAt: string;
 }
 
@@ -46,30 +33,26 @@ export interface OrderItem {
   orderId: string;
   productId: string;
   quantity: number;
-  priceAtPurchase: number;
-}
-
-export interface WishlistItem {
-  id: string;
-  userId: string;
-  productId: string;
-  createdAt: string;
-}
-
-export interface Coupon {
-  id: string;
-  code: string;
-  discountType: "percentage" | "fixed";
-  discountValue: number;
-  active: boolean;
-  createdAt: string;
+  unitPrice: number;
 }
 
 export interface EventRecord {
   id: string;
-  eventName: BehavioralEventName;
+  eventType: BehavioralEventName;
   userId: string | null;
   sessionId: string;
+  anonymousId: string | null;
   payload: Record<string, unknown>;
-  createdAt: string;
+  occurredAt: string;
+  receivedAt: string;
+}
+
+export interface AnalyticsSummary {
+  id: string;
+  summaryType: string;
+  dimension: string | null;
+  periodStart: string;
+  periodEnd: string;
+  metrics: Record<string, unknown>;
+  computedAt: string;
 }
