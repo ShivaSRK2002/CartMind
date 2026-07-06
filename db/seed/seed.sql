@@ -2,7 +2,7 @@
 -- Safe to re-run: truncates dependent tables first.
 -- Demo password for all seeded users: "password123"
 
-TRUNCATE TABLE order_items, orders, events, products, users, banners RESTART IDENTITY CASCADE;
+TRUNCATE TABLE order_items, orders, events, product_images, products, users, banners RESTART IDENTITY CASCADE;
 
 INSERT INTO users (email, password_hash, name, role) VALUES
   ('admin@cartmind.ai', '$2b$10$Tr4qUDgq17.0qlhiwJNpCuThYIFbthpZvLut.5ZQngjzRjIMX2X6O', 'Ava Administrator', 'admin'),
