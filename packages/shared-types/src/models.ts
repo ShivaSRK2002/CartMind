@@ -47,6 +47,16 @@ export interface EventRecord {
   receivedAt: string;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkUrl: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface AnalyticsSummary {
   id: string;
   summaryType: string;
