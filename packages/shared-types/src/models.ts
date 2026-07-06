@@ -20,6 +20,25 @@ export interface Product {
   createdAt: string;
 }
 
+export interface ProductImage {
+  id: string;
+  productId: string;
+  imageUrl: string;
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface ProductWithImages extends Product {
+  images: ProductImage[];
+}
+
+export interface PaginatedProducts {
+  items: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -34,6 +53,23 @@ export interface OrderItem {
   productId: string;
   quantity: number;
   unitPrice: number;
+}
+
+export interface OrderWithItems extends Order {
+  items: OrderItem[];
+}
+
+export interface CustomerOrderHistory {
+  orders: OrderWithItems[];
+  lifetimeTotal: number;
+}
+
+export interface AdminCustomerSummary {
+  id: string;
+  name: string;
+  email: string;
+  orderCount: number;
+  lifetimeValue: number;
 }
 
 export interface EventRecord {
