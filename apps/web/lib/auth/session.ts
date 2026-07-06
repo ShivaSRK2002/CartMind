@@ -3,8 +3,7 @@ import { SESSION_COOKIE_NAME } from "./constants";
 import { verifyAuthToken, type AuthTokenPayload } from "./jwt";
 
 export async function getSession(): Promise<AuthTokenPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const token = await getSessionToken();
 
   if (!token) {
     return null;
@@ -15,4 +14,9 @@ export async function getSession(): Promise<AuthTokenPayload | null> {
   } catch {
     return null;
   }
+}
+
+export async function getSessionToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null;
 }
