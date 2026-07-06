@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { LogoutButton } from "./LogoutButton";
+import { CartLink } from "./CartLink";
 
 export async function Header() {
   const session = await getSession();
@@ -15,6 +16,7 @@ export async function Header() {
           <Link href="/products" className="hover:text-amber-300">
             Products
           </Link>
+          <CartLink />
           {session ? (
             <>
               {session.role === "admin" ? (

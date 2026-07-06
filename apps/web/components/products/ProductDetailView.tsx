@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import type { ProductWithImages } from "cartmind-shared-types";
 import { trackAddToCart, trackProductViewed } from "@/lib/analytics/track";
+import { useCart } from "@/lib/cart/CartContext";
+import { buildPlaceholderImage, colorForCategory } from "@/lib/placeholderImage";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 
@@ -10,6 +12,7 @@ export function ProductDetailView({ product }: { product: ProductWithImages }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const cart = useCart();
 
   useEffect(() => {
     trackProductViewed({
@@ -27,7 +30,8 @@ export function ProductDetailView({ product }: { product: ProductWithImages }) {
           {
             id: "fallback",
             productId: product.id,
-            imageUrl: product.imageUrl ?? "https://picsum.photos/seed/placeholder/800/800",
+            imageUrl:
+              product.imageUrl ?? buildPlaceholderImage(product.name, colorForCategory(product.category), 800, 800),
             displayOrder: 0,
             createdAt: "",
           },
@@ -35,6 +39,10 @@ export function ProductDetailView({ product }: { product: ProductWithImages }) {
 
   function handleAddToCart() {
     trackAddToCart({ id: product.id, name: product.name, price: product.price }, quantity);
+    cart.addItem(
+      { productId: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl },
+      quantity,
+    );
     setToastMessage(`Added ${quantity} × ${product.name} to cart`);
   }
 

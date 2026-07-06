@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { RudderStackProvider } from "@/components/RudderStackProvider";
+import { CartProvider } from "@/lib/cart/CartContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import "./globals.css";
@@ -32,9 +33,11 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <RudderStackProvider>
-          <Header />
-          {children}
-          <Footer />
+          <CartProvider>
+            <Header />
+            {children}
+            <Footer />
+          </CartProvider>
         </RudderStackProvider>
       </body>
     </html>
