@@ -1,16 +1,16 @@
 import Link from "next/link";
 import type { ApiResponse, Banner } from "cartmind-shared-types";
 import { BannerCarousel } from "@/components/BannerCarousel";
+import { buildPlaceholderImage, colorForCategory } from "@/lib/placeholderImage";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-const CATEGORIES = [
-  { name: "Electronics", image: "https://picsum.photos/seed/cat-electronics/400/300" },
-  { name: "Apparel", image: "https://picsum.photos/seed/cat-apparel/400/300" },
-  { name: "Home & Kitchen", image: "https://picsum.photos/seed/cat-home/400/300" },
-  { name: "Books", image: "https://picsum.photos/seed/cat-books/400/300" },
-  { name: "Sports & Outdoors", image: "https://picsum.photos/seed/cat-sports/400/300" },
-];
+const CATEGORY_NAMES = ["Electronics", "Apparel", "Home & Kitchen", "Books", "Sports & Outdoors"];
+
+const CATEGORIES = CATEGORY_NAMES.map((name) => ({
+  name,
+  image: buildPlaceholderImage(name, colorForCategory(name), 400, 300),
+}));
 
 async function getBanners(): Promise<Banner[]> {
   try {

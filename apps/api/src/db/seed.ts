@@ -2,6 +2,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Pool } from "pg";
+import { buildPlaceholderImage, colorForCategory, shadeColor } from "./placeholder-image";
 
 const SEED_FILE = path.resolve(__dirname, "../../../../db/seed/seed.sql");
 
@@ -9,6 +10,7 @@ const THREE_YEARS_MS = 3 * 365 * 24 * 60 * 60 * 1000;
 const ORDERS_PER_CUSTOMER_MIN = 20;
 const ORDERS_PER_CUSTOMER_MAX = 30;
 const IMAGES_PER_PRODUCT = 3;
+const GALLERY_SHADE_STEPS = [0, 15, -15];
 
 interface ProductRow {
   id: string;
@@ -30,23 +32,51 @@ function randomPastDate(): Date {
   return new Date(Date.now() - Math.random() * THREE_YEARS_MS);
 }
 
-async function seedProductImages(pool: Pool): Promise<void> {
-  const { rows: products } = await pool.query<{ id: string }>("SELECT id FROM products");
+async function seedProductImagePlaceholders(pool: Pool): Promise<void> {
+  const { rows: products } = await pool.query<{ id: string; name: string; category: string }>(
+    "SELECT id, name, category FROM products",
+  );
 
   for (const product of products) {
+    const baseColor = colorForCategory(product.category);
+    const primaryImage = buildPlaceholderImage(product.name, baseColor, 400, 400);
+
+    await pool.query("UPDATE products SET image_url = $1 WHERE id = $2", [primaryImage, product.id]);
+
     const params: unknown[] = [];
     const placeholders: string[] = [];
 
-    for (let i = 0; i < IMAGES_PER_PRODUCT; i++) {
+    GALLERY_SHADE_STEPS.forEach((shadePercent, i) => {
+      const galleryImage = buildPlaceholderImage(
+        product.name,
+        shadeColor(baseColor, shadePercent),
+        800,
+        800,
+      );
       const base = i * 3;
-      params.push(product.id, `https://picsum.photos/seed/${product.id}-${i}/800/800`, i);
+      params.push(product.id, galleryImage, i);
       placeholders.push(`($${base + 1}, $${base + 2}, $${base + 3})`);
-    }
+    });
 
     await pool.query(
       `INSERT INTO product_images (product_id, image_url, display_order) VALUES ${placeholders.join(", ")}`,
       params,
     );
+  }
+}
+
+const BANNER_CATEGORIES = ["Electronics", "Apparel", "Home & Kitchen", "Sports & Outdoors"];
+
+async function seedBannerImagePlaceholders(pool: Pool): Promise<void> {
+  const { rows: banners } = await pool.query<{ id: string; title: string }>(
+    "SELECT id, title FROM banners ORDER BY display_order ASC",
+  );
+
+  for (let i = 0; i < banners.length; i++) {
+    const banner = banners[i];
+    const category = BANNER_CATEGORIES[i] ?? BANNER_CATEGORIES[0];
+    const image = buildPlaceholderImage(banner.title, colorForCategory(category), 1200, 400);
+    await pool.query("UPDATE banners SET image_url = $1 WHERE id = $2", [image, banner.id]);
   }
 }
 
@@ -107,8 +137,11 @@ async function run(): Promise<void> {
     await pool.query(sql);
     console.log("Base seed data applied (users, products, banners).");
 
-    await seedProductImages(pool);
+    await seedProductImagePlaceholders(pool);
     console.log("Product images seeded.");
+
+    await seedBannerImagePlaceholders(pool);
+    console.log("Banner images seeded.");
 
     await seedOrderHistory(pool);
     console.log("3 years of order history seeded.");

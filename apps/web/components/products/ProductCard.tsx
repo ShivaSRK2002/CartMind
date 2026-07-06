@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Product } from "cartmind-shared-types";
+import { buildPlaceholderImage, colorForCategory } from "@/lib/placeholderImage";
 
 export function ProductCard({ product }: { product: Product }) {
   return (
@@ -9,7 +10,7 @@ export function ProductCard({ product }: { product: Product }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={product.imageUrl ?? "https://picsum.photos/seed/placeholder/400/400"}
+        src={product.imageUrl ?? buildPlaceholderImage(product.name, colorForCategory(product.category))}
         alt={product.name}
         className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
       />
