@@ -56,8 +56,11 @@ npm run db:seed
 ```
 
 Inserts 5 demo users (`admin@cartmind.ai` + 4 customers, password `password123`
-for all) and 30 demo products across 5 categories. Safe to re-run — it
-truncates dependent tables first.
+for all), 30 demo products (3 gallery images each) across 5 categories, 4 promo
+banners, and ~20–30 randomly-dated orders per customer spread across the last
+3 years (mostly `paid`, some `cancelled`/`pending`) so the app has realistic
+purchase history out of the box. Safe to re-run — it truncates dependent
+tables first.
 
 ### Start the apps
 
@@ -93,6 +96,13 @@ JWT-based, no paid Firebase tier. `apps/api` issues tokens on register/login;
 - Seeded accounts (after `npm run db:seed`): `admin@cartmind.ai` (admin) and
   `alice@example.com` / `bob@example.com` / `carol@example.com` /
   `dave@example.com` (customers), password `password123` for all.
+
+## Pages
+
+- `/products` — SSR product grid, paginated, filterable by category, searchable by name.
+- `/products/[id]` — product detail with an image gallery, quantity selector, and an "Add to Cart" action (fires the `add_to_cart` event; no persistent cart yet).
+- `/account/orders` — a logged-in customer's order history and lifetime spend.
+- `/admin` — customer list with order count and lifetime value (admin-only).
 
 ## Folder structure
 
