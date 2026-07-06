@@ -85,10 +85,11 @@ JWT-based, no paid Firebase tier. `apps/api` issues tokens on register/login;
 - `JWT_SECRET` **must be the same value** in `apps/api/.env` and
   `apps/web/.env.local` — the API signs tokens, the web app's middleware and
   session helper verify them independently.
-- Customer flows: `/register`, `/login`.
-- Admin flow: `/admin/login` — rejects credentials for non-admin accounts.
-  `middleware.ts` guards all `/admin/**` routes, redirecting to `/admin/login`
-  if there's no valid admin session.
+- One `/login` page for everyone (customer and admin) — after login, the
+  client redirects based on the returned `user.role`: admins go to `/admin`,
+  everyone else goes to `/`. `/register` always creates a `customer` account.
+- `middleware.ts` guards all `/admin/**` routes, redirecting to `/login` if
+  there's no valid admin session.
 - Seeded accounts (after `npm run db:seed`): `admin@cartmind.ai` (admin) and
   `alice@example.com` / `bob@example.com` / `carol@example.com` /
   `dave@example.com` (customers), password `password123` for all.
@@ -104,7 +105,7 @@ JWT-based, no paid Firebase tier. `apps/api` issues tokens on register/login;
 /db
   docker-compose.yml   Local PostgreSQL 16 container
   /migrations          SQL migration files (node-pg-migrate)
-  /seed                Seed data (5 demo users, 30 demo products)
+  /seed                Seed data (5 demo users, 30 demo products, 4 promo banners)
 /docs                  Architecture diagrams, API docs, setup notes
 ```
 
