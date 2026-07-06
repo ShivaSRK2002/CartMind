@@ -62,6 +62,13 @@ banners, and ~20–30 randomly-dated orders per customer spread across the last
 purchase history out of the box. Safe to re-run — it truncates dependent
 tables first.
 
+Product/category/banner images are generated locally as category-colored SVG
+placeholders (see `apps/api/src/db/placeholder-image.ts` and
+`apps/web/lib/placeholderImage.ts`) rather than fetched from an external stock
+photo service — they always render with zero network dependency and stay
+visually grouped by category. Swap in real product photography later by
+setting `products.image_url` / `product_images.image_url` to real URLs.
+
 ### Start the apps
 
 Run web and API together:
@@ -100,7 +107,8 @@ JWT-based, no paid Firebase tier. `apps/api` issues tokens on register/login;
 ## Pages
 
 - `/products` — SSR product grid, paginated, filterable by category, searchable by name.
-- `/products/[id]` — product detail with an image gallery, quantity selector, and an "Add to Cart" action (fires the `add_to_cart` event; no persistent cart yet).
+- `/products/[id]` — product detail with an image gallery, quantity selector, and an "Add to Cart" action (fires the `add_to_cart` event and adds to the cart).
+- `/cart` — client-side cart (persisted to `localStorage`, not the backend yet): quantities, remove, subtotal. Checkout is not implemented — that's a future phase.
 - `/account/orders` — a logged-in customer's order history and lifetime spend.
 - `/admin` — customer list with order count and lifetime value (admin-only).
 
