@@ -3,6 +3,7 @@ import { jwtVerify } from "jose";
 export interface AuthTokenPayload {
   sub: string;
   email: string;
+  name: string;
   role: "customer" | "admin";
 }
 

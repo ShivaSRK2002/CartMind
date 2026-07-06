@@ -63,7 +63,7 @@ authRouter.post("/register", async (req, res, next) => {
     );
 
     const user = toPublicUser(result.rows[0]);
-    const token = signAuthToken({ sub: user.id, email: user.email, role: user.role });
+    const token = signAuthToken({ sub: user.id, email: user.email, name: user.name, role: user.role });
 
     sendSuccess(res, { user, token }, 201);
   } catch (err) {
@@ -99,7 +99,7 @@ authRouter.post("/login", async (req, res, next) => {
     }
 
     const user = toPublicUser(row);
-    const token = signAuthToken({ sub: user.id, email: user.email, role: user.role });
+    const token = signAuthToken({ sub: user.id, email: user.email, name: user.name, role: user.role });
 
     sendSuccess(res, { user, token });
   } catch (err) {
