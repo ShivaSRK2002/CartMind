@@ -2,7 +2,7 @@
 -- Safe to re-run: truncates dependent tables first.
 -- Demo password for all seeded users: "password123"
 
-TRUNCATE TABLE order_items, orders, events, products, users RESTART IDENTITY CASCADE;
+TRUNCATE TABLE order_items, orders, events, products, users, banners RESTART IDENTITY CASCADE;
 
 INSERT INTO users (email, password_hash, name, role) VALUES
   ('admin@cartmind.ai', '$2b$10$Tr4qUDgq17.0qlhiwJNpCuThYIFbthpZvLut.5ZQngjzRjIMX2X6O', 'Ava Administrator', 'admin'),
@@ -51,3 +51,9 @@ INSERT INTO products (name, description, price, category, image_url, stock) VALU
   ('2-Person Camping Tent', 'Lightweight waterproof tent for backpacking.', 119.99, 'Sports & Outdoors', 'https://picsum.photos/seed/sports-4/400/400', 19),
   ('Cycling Helmet', 'Aerodynamic helmet with adjustable fit system.', 49.99, 'Sports & Outdoors', 'https://picsum.photos/seed/sports-5/400/400', 41),
   ('Resistance Bands Set', '5-band resistance set with door anchor.', 19.99, 'Sports & Outdoors', 'https://picsum.photos/seed/sports-6/400/400', 66);
+
+INSERT INTO banners (title, image_url, link_url, display_order, is_active) VALUES
+  ('Big Electronics Sale — Up to 40% Off', 'https://picsum.photos/seed/banner-electronics/1200/400', '/products?category=Electronics', 1, true),
+  ('New Season Apparel Just Dropped', 'https://picsum.photos/seed/banner-apparel/1200/400', '/products?category=Apparel', 2, true),
+  ('Kit Out Your Kitchen — Home & Kitchen Deals', 'https://picsum.photos/seed/banner-home/1200/400', '/products?category=Home+%26+Kitchen', 3, true),
+  ('Gear Up for the Outdoors', 'https://picsum.photos/seed/banner-sports/1200/400', '/products?category=Sports+%26+Outdoors', 4, true);

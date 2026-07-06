@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { healthRouter } from "./routes/health.route";
 import { authRouter } from "./routes/auth.route";
+import { bannersRouter } from "./routes/banners.route";
 import { errorHandler } from "./middleware/errorHandler";
 
 export function createApp() {
@@ -12,6 +13,7 @@ export function createApp() {
 
   app.use("/api/v1/health", healthRouter);
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/banners", bannersRouter);
 
   app.use(errorHandler);
 
