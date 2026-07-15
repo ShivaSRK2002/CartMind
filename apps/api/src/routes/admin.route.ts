@@ -1,46 +1,68 @@
 import { Router } from "express";
-import type { AdminCustomerSummary } from "cartmind-shared-types";
-import { pool } from "../db/pool";
+import { z } from "zod";
+import { buildInsightContext } from "../lib/insightContext";
+import { generateInsight } from "../lib/gemini";
+import { ECOMMERCE_STORES } from "../lib/stores";
 import { requireAuth, requireRole } from "../middleware/auth";
-import { sendSuccess } from "../utils/response";
+import { sendError, sendSuccess } from "../utils/response";
+import { fetchCustomers } from "./admin.dashboard";
+import { buildStoreDashboard } from "./admin.dashboardBuilder";
 
 export const adminRouter = Router();
 
-interface CustomerSummaryRow {
-  id: string;
-  name: string;
-  email: string;
-  order_count: string;
-  lifetime_value: string | null;
-}
+const insightChatSchema = z.object({
+  storeId: z.string().min(1),
+  message: z.string().min(1).max(2000),
+});
 
-function toCustomerSummary(row: CustomerSummaryRow): AdminCustomerSummary {
-  return {
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    orderCount: Number(row.order_count),
-    lifetimeValue: Number(row.lifetime_value ?? 0),
-  };
-}
+adminRouter.get("/stores", requireAuth, requireRole("admin"), (_req, res) => {
+  sendSuccess(res, { stores: ECOMMERCE_STORES });
+});
 
 adminRouter.get("/customers", requireAuth, requireRole("admin"), async (_req, res, next) => {
   try {
-    const result = await pool.query<CustomerSummaryRow>(
-      `SELECT
-         u.id,
-         u.name,
-         u.email,
-         count(o.id) FILTER (WHERE o.status = 'paid') AS order_count,
-         COALESCE(SUM(o.total_amount) FILTER (WHERE o.status = 'paid'), 0) AS lifetime_value
-       FROM users u
-       LEFT JOIN orders o ON o.user_id = u.id
-       WHERE u.role = 'customer'
-       GROUP BY u.id, u.name, u.email
-       ORDER BY lifetime_value DESC`,
-    );
+    const customers = await fetchCustomers();
+    sendSuccess(res, { customers });
+  } catch (err) {
+    next(err);
+  }
+});
 
-    sendSuccess(res, { customers: result.rows.map(toCustomerSummary) });
+adminRouter.get("/dashboard/:storeId", requireAuth, requireRole("admin"), async (req, res, next) => {
+  try {
+    const dashboard = await buildStoreDashboard(req.params.storeId);
+    if (!dashboard) {
+      sendError(res, "Store not found", 404);
+      return;
+    }
+    sendSuccess(res, dashboard);
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.post("/insights/chat", requireAuth, requireRole("admin"), async (req, res, next) => {
+  const parsed = insightChatSchema.safeParse(req.body);
+  if (!parsed.success) {
+    sendError(res, "Invalid chat payload", 400);
+    return;
+  }
+
+  try {
+    const dashboard = await buildStoreDashboard(parsed.data.storeId);
+    if (!dashboard) {
+      sendError(res, "Store not found", 404);
+      return;
+    }
+
+    const context = buildInsightContext(dashboard);
+    const result = await generateInsight(parsed.data.message, context);
+
+    sendSuccess(res, {
+      reply: result.reply,
+      model: result.model,
+      usedFallback: result.usedFallback,
+    });
   } catch (err) {
     next(err);
   }

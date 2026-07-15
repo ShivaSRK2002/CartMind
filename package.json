@@ -9,12 +9,15 @@
   "scripts": {
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:api": "npm run dev --workspace=apps/api",
-    "dev": "concurrently -n web,api -c blue,green \"npm:dev:web\" \"npm:dev:api\"",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "dev": "concurrently -n web,api,admin -c blue,green,magenta \"npm:dev:web\" \"npm:dev:api\" \"npm:dev:admin\"",
     "db:migrate": "npm run migrate --workspace=apps/api",
     "db:seed": "npm run seed --workspace=apps/api",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspace=apps/api",
+    "screenshots": "node scripts/capture-screenshots.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

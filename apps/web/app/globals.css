@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f5f0;
+  --foreground: #1a1816;
+  --surface: #ffffff;
+  --surface-muted: #f0ebe3;
+  --surface-elevated: #ffffff;
+
+  --brand-primary: #7a4e35;
+  --brand-primary-hover: #634029;
+  --brand-primary-light: #f3ebe4;
+
+  --brand-accent: #b8956b;
+  --brand-accent-hover: #a68458;
+
+  --brand-header: #1a1816;
+  --brand-header-secondary: #2a2623;
+  --brand-header-text: #f8f5f0;
+
+  --brand-success: #4d6b52;
+  --brand-success-light: #edf3ee;
+
+  --brand-buy: #8f4f3a;
+  --brand-buy-hover: #7a4332;
+
+  --border-warm: #e5ddd3;
+  --border-subtle: #ede8e1;
+  --text-muted: #7a736b;
+  --text-subtle: #a39e97;
+
+  --shadow-soft: 0 1px 3px rgba(26, 24, 22, 0.04), 0 4px 12px rgba(26, 24, 22, 0.03);
+  --shadow-card: 0 2px 8px rgba(26, 24, 22, 0.05), 0 12px 32px rgba(26, 24, 22, 0.04);
+  --shadow-hover: 0 4px 16px rgba(26, 24, 22, 0.08), 0 16px 40px rgba(26, 24, 22, 0.06);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-primary-light: var(--brand-primary-light);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-hover: var(--brand-accent-hover);
+  --color-brand-header: var(--brand-header);
+  --color-brand-header-secondary: var(--brand-header-secondary);
+  --color-brand-header-text: var(--brand-header-text);
+  --color-brand-success: var(--brand-success);
+  --color-brand-success-light: var(--brand-success-light);
+  --color-brand-buy: var(--brand-buy);
+  --color-brand-buy-hover: var(--brand-buy-hover);
+  --color-border-warm: var(--border-warm);
+  --color-border-subtle: var(--border-subtle);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
   --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-playfair);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+}
+
+.premium-shadow {
+  box-shadow: var(--shadow-soft);
+}
+
+.premium-shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.premium-shadow-hover:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.accent-line {
+  display: block;
+  width: 2.5rem;
+  height: 1px;
+  background: var(--brand-accent);
+  margin-top: 0.75rem;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

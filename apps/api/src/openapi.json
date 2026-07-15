@@ -1,0 +1,244 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Velora Commerce API",
+    "description": "REST API for Velora storefront, behavioral event ingestion, orders, and admin analytics.",
+    "version": "1.0.0"
+  },
+  "servers": [{ "url": "http://localhost:4000", "description": "Local development" }],
+  "tags": [
+    { "name": "Health" },
+    { "name": "Auth" },
+    { "name": "Products" },
+    { "name": "Orders" },
+    { "name": "Events" },
+    { "name": "Admin" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiSuccess": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "type": "object" }
+        }
+      },
+      "ApiFailure": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": { "type": "string" }
+        }
+      },
+      "BehavioralEventName": {
+        "type": "string",
+        "enum": [
+          "product_viewed",
+          "add_to_cart",
+          "remove_from_cart",
+          "checkout_started",
+          "payment_success",
+          "wishlist_add",
+          "coupon_applied",
+          "search_query",
+          "checkout_abandoned"
+        ]
+      },
+      "IngestEventInput": {
+        "type": "object",
+        "required": ["eventType", "sessionId", "payload"],
+        "properties": {
+          "eventType": { "$ref": "#/components/schemas/BehavioralEventName" },
+          "sessionId": { "type": "string", "example": "sess_abc123" },
+          "anonymousId": { "type": "string" },
+          "payload": { "type": "object", "additionalProperties": true },
+          "occurredAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "responses": { "200": { "description": "API is healthy" } }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Sign in",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "JWT token returned" } }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Create customer account",
+        "responses": { "201": { "description": "Account created" } }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "List products",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "ids", "in": "query", "schema": { "type": "string" }, "description": "Comma-separated product UUIDs" }
+        ],
+        "responses": { "200": { "description": "Paginated product list" } }
+      }
+    },
+    "/api/v1/products/recommendations": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Collaborative filtering recommendations",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "seedProductIds", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Recommended products" } }
+      }
+    },
+    "/api/v1/products/{id}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Product detail with images",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": { "200": { "description": "Product" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/api/v1/orders": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Place order",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Order created" } }
+      }
+    },
+    "/api/v1/orders/me": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Order history for current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Orders with line items" } }
+      }
+    },
+    "/api/v1/events": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Ingest a behavioral event",
+        "description": "Persists RudderStack-compatible behavioral events to PostgreSQL. Optional JWT attaches user_id.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IngestEventInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Event stored" },
+          "400": { "description": "Invalid payload" }
+        }
+      }
+    },
+    "/api/v1/events/batch": {
+      "post": {
+        "tags": ["Events"],
+        "summary": "Ingest up to 50 events",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["events"],
+                "properties": {
+                  "events": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/IngestEventInput" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Batch stored" } }
+      }
+    },
+    "/api/v1/admin/stores": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List e-commerce storefronts",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Store list" } }
+      }
+    },
+    "/api/v1/admin/dashboard/{storeId}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Analytics dashboard for a store",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "storeId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Dashboard KPIs and cohorts" } }
+      }
+    },
+    "/api/v1/admin/insights/chat": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "AI insight assistant (Gemini)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["storeId", "message"],
+                "properties": {
+                  "storeId": { "type": "string" },
+                  "message": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "AI-generated insight" } }
+      }
+    }
+  }
+}

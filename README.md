@@ -1,135 +1,351 @@
 # CartMind AI
 
-A behavioral-analytics eCommerce demo platform: tracks the shopper journey
-(views, cart actions, checkout, search) through nine canonical events and
-surfaces that data for analysis.
+**Behavioral-analytics ecommerce platform** — a full shopper journey on **Velora**, first-party event ingestion into PostgreSQL, ML risk scores and segmentation, and operator insights in **Orbit**.
+
+| | |
+|--|--|
+| **Repo** | [github.com/ShivaSRK2002/CartMind](https://github.com/ShivaSRK2002/CartMind) |
+| **Deployed URLs** | Not published yet — run locally (Vercel/Render configs are ready; see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) |
+
+| Surface | Role | Local URL |
+|---------|------|-----------|
+| **Velora** (`apps/web`) | Customer storefront | http://localhost:3000 |
+| **Orbit** (`apps/admin`) | Multi-store analytics admin | http://localhost:3001 |
+| **API** (`apps/api`) | Express REST + Swagger | http://localhost:4000 · [docs](http://localhost:4000/api/docs) |
+
+```
+Velora (Next.js)  ──►  Express API  ──►  PostgreSQL
+Orbit (Next.js)   ──►       ▲
+                            │
+                     Events + optional RudderStack
+```
+
+---
+
+## Screenshots
+
+### Velora storefront
+
+![Velora home](docs/screenshots/velora-home.png)
+
+![Velora products](docs/screenshots/velora-products.png)
+
+### Orbit dashboard
+
+![Orbit login](docs/screenshots/orbit-login.png)
+
+![Orbit dashboard](docs/screenshots/orbit-dashboard.png)
+
+### API
+
+![Swagger docs](docs/screenshots/api-swagger.png)
+
+![Health endpoint](docs/screenshots/api-health.png)
+
+### Tests & coverage
+
+![API coverage report](docs/screenshots/api-test-coverage.png)
+
+| Metric | Result |
+|--------|--------|
+| Tests | **15 passed** (32 todo stubs skipped) |
+| Statements | **54.48%** |
+| Branches | **63.82%** |
+| Functions | **69.38%** |
+| Lines | **54.48%** |
+
+Details: [docs/screenshots/COVERAGE.md](docs/screenshots/COVERAGE.md). Re-capture UI shots with apps running: `npm run screenshots`.
+
+---
+
+## What it does
+
+1. **Shop** — Browse, search, wishlist, coupons, cart, multi-step checkout (simulated payment), and order history on Velora.
+2. **Track** — Emit nine canonical behavioral events into Postgres (and optionally RudderStack) for every major shopper action.
+3. **Analyze** — Orbit shows KPIs, revenue trends, event breakdowns, ML risk scores, k-means cohorts, and an AI insight chat (Google Gemini when configured).
+
+Demo partner stores (**BloomMart**, **NovaNest**, **PulseMart**) appear in Orbit with synthetic dashboards; **Velora** is the live store backed by real DB data.
+
+---
+
+## Monorepo layout
+
+```
+cartMindAi/
+├── apps/
+│   ├── web/                 # Velora — Next.js 16 storefront (App Router)
+│   ├── admin/               # Orbit — Next.js 16 analytics dashboard
+│   └── api/                 # Express REST API (auth, catalog, orders, events, ML, Gemini)
+├── packages/
+│   └── shared-types/        # Events, models, coupons, ML types, API envelope
+├── db/
+│   ├── docker-compose.yml   # PostgreSQL 16
+│   └── migrations/          # SQL migrations (node-pg-migrate)
+├── docs/
+│   ├── DEPLOYMENT.md        # Vercel + Render guide
+│   └── screenshots/         # UI + coverage captures for README
+├── scripts/
+│   └── capture-screenshots.mjs
+├── .github/workflows/ci.yml
+└── render.yaml              # Render blueprint (API + Postgres)
+```
+
+**Workspaces:** npm workspaces (`apps/*`, `packages/*`). Shared contracts live in `cartmind-shared-types`.
+
+---
+
+## Tech stack
+
+| Layer | Stack |
+|-------|--------|
+| Runtime | Node.js 20, TypeScript |
+| Frontends | Next.js 16, React 19, Tailwind CSS 4 |
+| API | Express 4, Zod, Swagger UI |
+| Auth | JWT (`jsonwebtoken` / `jose`), bcrypt, httpOnly cookies |
+| Database | PostgreSQL 16 (`pg`), `node-pg-migrate` |
+| Analytics | First-party events + optional RudderStack |
+| ML | Pure TypeScript (sigmoid risk scores + seeded k-means) |
+| AI insights | Google Gemini REST (optional; rule-based fallback) |
+| Deploy | Vercel (web + admin), Render (API + DB), GitHub Actions CI |
+
+---
+
+## High-level flows
+
+### Customer journey (Velora)
+
+```
+Browse / search  →  product_viewed
+Add to cart / wishlist  →  add_to_cart | wishlist_add
+Apply coupon  →  coupon_applied
+Checkout  →  checkout_started
+Pay (dummy cards)  →  POST /orders  →  payment_success
+Leave mid-checkout  →  checkout_abandoned
+```
+
+- **Cart, wishlist, coupons** persist in the browser (`localStorage` contexts).
+- **Orders** are created on the API after authenticated checkout; payment is simulated via test cards (not a real PSP).
+- Next.js BFF routes under `apps/web/app/api/*` proxy to the Express API and attach the session cookie as a Bearer token.
+
+### Event ingestion
+
+```
+track*() in storefront
+  ├─► POST /api/events (web BFF)  →  POST /api/v1/events  →  PostgreSQL
+  └─► RudderStack analytics.track()   (if write key + data-plane URL are set)
+```
+
+Session and anonymous IDs are managed client-side. Optional auth attaches `user_id`. Batch ingest is available at `POST /api/v1/events/batch` (max 50).
+
+### Recommendations & ML
+
+| Capability | Behavior |
+|------------|----------|
+| **Product recommendations** | Purchase history, co-purchase frequency, category affinity, recent view seeds; popularity fallback when sparse |
+| **Risk scores** | Churn, cart-abandonment, and conversion propensity (hand-tuned sigmoid / ensemble features from orders + 30d events) |
+| **Segmentation** | Seeded k-means → `high-value` \| `at-risk` \| `impulse` \| `browser` |
+| **Persistence** | Pipeline summary written to `analytics_summaries` (model label `velora-ml-v1`) |
+
+### Orbit insights
+
+Admin JWT → store dashboard (live for Velora, demo for others) → optional `POST /api/v1/admin/insights/chat`. With `GEMINI_API_KEY`, replies use Gemini; otherwise a keyword rule-based assistant responds.
+
+### Authentication
+
+- API issues JWTs on register/login; Velora and Orbit store them in **httpOnly** cookies via their own BFF auth routes.
+- **`JWT_SECRET` must be identical** across `apps/api`, `apps/web`, and `apps/admin`.
+- Register always creates a `customer`. Orbit login rejects non-admin users.
+- Seeded: `admin@cartmind.ai` and customers `alice|bob|carol|dave@example.com` — password `password123` for all.
+
+---
+
+## Canonical behavioral events
+
+Do not rename these (shared in `packages/shared-types/src/events.ts`):
+
+| Event | When |
+|-------|------|
+| `product_viewed` | Product detail / listing interest |
+| `add_to_cart` | Line added to cart |
+| `remove_from_cart` | Line removed |
+| `checkout_started` | Checkout entered |
+| `payment_success` | Order paid successfully |
+| `wishlist_add` | Item saved to wishlist |
+| `coupon_applied` | Promo code applied |
+| `search_query` | Catalog search |
+| `checkout_abandoned` | Checkout left incomplete |
+
+---
+
+## API surface
+
+Base path: `/api/v1`. Interactive docs: `/api/docs`.
+
+| Group | Endpoints |
+|-------|-----------|
+| Health | `GET /health` |
+| Auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
+| Banners | `GET /banners` |
+| Products | `GET /products`, `GET /products/recommendations`, `GET /products/:id` |
+| Orders | `POST /orders`, `GET /orders/me`, `GET /orders/:id` |
+| Events | `POST /events`, `POST /events/batch` |
+| Admin | `GET /admin/stores`, `GET /admin/customers`, `GET /admin/dashboard/:storeId`, `POST /admin/insights/chat` |
+
+Responses use the shared envelope: `{ success, data }` or `{ success: false, error }`.
+
+---
+
+## Velora & Orbit pages
+
+### Velora (`apps/web`)
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Home — banners, categories, product rows |
+| `/products`, `/products/[id]` | Catalog + detail (gallery, cart, wishlist, recommendations) |
+| `/cart` | Cart quantities, subtotal, coupon field |
+| `/checkout`, `/checkout/confirmation` | Multi-step checkout + confirmation |
+| `/wishlist` | Saved items |
+| `/offers` | Demo promo codes |
+| `/login`, `/register` | Customer (and admin redirect toward Orbit) |
+| `/account`, `/account/orders`, `/account/orders/[id]` | Profile and order history |
+
+### Orbit (`apps/admin`)
+
+| Route | Purpose |
+|-------|---------|
+| `/login` | Admin-only sign-in |
+| `/` | Store selector, KPIs, revenue chart, events, segmentation, ML scores, customers, AI insight panel |
+
+---
 
 ## Prerequisites
 
-- Node.js 20 (see `.nvmrc` — run `nvm use` if you use nvm)
+- Node.js 20 (see `.nvmrc`)
 - npm 10+
-- Docker Desktop (or Docker Engine + Compose plugin) for the local PostgreSQL container
+- Docker Desktop (or Docker Engine + Compose) for local PostgreSQL
+
+---
 
 ## Getting started
 
-Install dependencies for all workspaces:
-
 ```bash
 npm install
-```
 
-Copy the environment file templates:
-
-```bash
 cp apps/web/.env.example apps/web/.env.local
+cp apps/admin/.env.example apps/admin/.env.local
 cp apps/api/.env.example apps/api/.env
 cp db/.env.example db/.env
-```
 
-### Start PostgreSQL
-
-```bash
 docker compose -f db/docker-compose.yml up -d
-```
-
-This starts Postgres 16 on `localhost:5432` (user/password/db: `cartmind`/`cartmind`/`cartmind`),
-matching the default `DATABASE_URL` in `apps/api/.env.example`.
-
-To stop it: `docker compose -f db/docker-compose.yml down` (add `-v` to also
-drop the data volume).
-
-### Run migrations
-
-```bash
 npm run db:migrate
-```
-
-Applies any `.sql` files in `db/migrations` that haven't run yet, via
-[node-pg-migrate](https://github.com/salsita/node-pg-migrate) (tracked in its
-`pgmigrations` table). Requires `DATABASE_URL` to be set (via `apps/api/.env`).
-To roll back the most recent migration: `npm run migrate:down --workspace=apps/api`.
-
-### Seed demo data
-
-```bash
 npm run db:seed
-```
-
-Inserts 5 demo users (`admin@cartmind.ai` + 4 customers, password `password123`
-for all), 30 demo products (3 gallery images each) across 5 categories, 4 promo
-banners, and ~20–30 randomly-dated orders per customer spread across the last
-3 years (mostly `paid`, some `cancelled`/`pending`) so the app has realistic
-purchase history out of the box. Safe to re-run — it truncates dependent
-tables first.
-
-Product/category/banner images are generated locally as category-colored SVG
-placeholders (see `apps/api/src/db/placeholder-image.ts` and
-`apps/web/lib/placeholderImage.ts`) rather than fetched from an external stock
-photo service — they always render with zero network dependency and stay
-visually grouped by category. Swap in real product photography later by
-setting `products.image_url` / `product_images.image_url` to real URLs.
-
-### Start the apps
-
-Run web and API together:
-
-```bash
 npm run dev
 ```
 
-Or individually:
+| Script | Action |
+|--------|--------|
+| `npm run dev` | Velora :3000, Orbit :3001, API :4000 |
+| `npm run dev:web` / `dev:api` / `dev:admin` | Run one app |
+| `npm run db:migrate` | Apply SQL migrations |
+| `npm run db:seed` | Demo users, 30 products, banners, order history |
+| `npm run build` / `lint` / `test` | Workspace-wide |
 
-```bash
-npm run dev:web   # Next.js dev server on http://localhost:3000
-npm run dev:api   # Express API on http://localhost:4000
-```
+Postgres defaults: `localhost:5432`, user/password/db `cartmind` / `cartmind` / `cartmind`.
 
 Health check: `GET http://localhost:4000/api/v1/health`
 
-## Authentication
+### Seed highlights
 
-JWT-based, no paid Firebase tier. `apps/api` issues tokens on register/login;
-`apps/web` stores them in an httpOnly cookie set by its own route handlers
-(`app/api/auth/*`), so the raw token never reaches client-side JS.
+- 5 users (1 admin + 4 customers), password `password123`
+- 30 products across 5 categories (SVG placeholders by category — no external image CDN)
+- Promo banners and ~20–30 dated orders per customer
+- Safe to re-run (truncates dependent tables first)
 
-- `JWT_SECRET` **must be the same value** in `apps/api/.env` and
-  `apps/web/.env.local` — the API signs tokens, the web app's middleware and
-  session helper verify them independently.
-- One `/login` page for everyone (customer and admin) — after login, the
-  client redirects based on the returned `user.role`: admins go to `/admin`,
-  everyone else goes to `/`. `/register` always creates a `customer` account.
-- `middleware.ts` guards all `/admin/**` routes, redirecting to `/login` if
-  there's no valid admin session.
-- Seeded accounts (after `npm run db:seed`): `admin@cartmind.ai` (admin) and
-  `alice@example.com` / `bob@example.com` / `carol@example.com` /
-  `dave@example.com` (customers), password `password123` for all.
+Rollback last migration: `npm run migrate:down --workspace=apps/api`
 
-## Pages
+---
 
-- `/products` — SSR product grid, paginated, filterable by category, searchable by name.
-- `/products/[id]` — product detail with an image gallery, quantity selector, and an "Add to Cart" action (fires the `add_to_cart` event and adds to the cart).
-- `/cart` — client-side cart (persisted to `localStorage`, not the backend yet): quantities, remove, subtotal. Checkout is not implemented — that's a future phase.
-- `/account/orders` — a logged-in customer's order history and lifetime spend.
-- `/admin` — customer list with order count and lifetime value (admin-only).
+## Environment variables
 
-## Folder structure
+### API (`apps/api/.env`)
 
+| Variable | Purpose |
+|----------|---------|
+| `PORT` | Default `4000` |
+| `DATABASE_URL` | Postgres connection string |
+| `JWT_SECRET` | Token signing (must match frontends) |
+| `GEMINI_API_KEY` | Optional Orbit AI chat |
+| `GEMINI_MODEL` | Default `gemini-2.0-flash` |
+| `RUDDERSTACK_WRITE_KEY` / `RUDDERSTACK_DATA_PLANE_URL` | Optional server CDP |
+
+### Velora (`apps/web/.env.local`)
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_API_URL` | Express base URL |
+| `NEXT_PUBLIC_ADMIN_URL` | Orbit URL (default `:3001`) |
+| `NEXT_PUBLIC_RUDDERSTACK_*` | Browser CDP |
+| `JWT_SECRET` | Verify session cookie |
+
+### Orbit (`apps/admin/.env.local`)
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_API_URL` | Express base URL |
+| `JWT_SECRET` | Verify admin session cookie |
+
+---
+
+## Testing
+
+```bash
+# Unit-focused (no DB required for many cases)
+npm run test --workspace=apps/api -- --testNamePattern="health|predict|coupons"
+
+# Full suite + coverage (requires Postgres + seed)
+npm run db:migrate && npm run db:seed
+npm run test:coverage
 ```
-/apps
-  /web             Next.js 14 storefront (App Router, TypeScript, Tailwind)
-  /api             Express REST API (TypeScript, tsx for dev)
-/packages
-  /shared-types    Shared TS types (event payloads, DB models, API response envelope)
-/db
-  docker-compose.yml   Local PostgreSQL 16 container
-  /migrations          SQL migration files (node-pg-migrate)
-  /seed                Seed data (5 demo users, 30 demo products, 4 promo banners)
-/docs                  Architecture diagrams, API docs, setup notes
-```
 
-## The 9 behavioral events
+Latest captured metrics (also in [docs/screenshots/COVERAGE.md](docs/screenshots/COVERAGE.md)): **15 passed**, **54.48%** line coverage.
 
-Canonical names (never rename): `product_viewed`, `add_to_cart`,
-`remove_from_cart`, `checkout_started`, `payment_success`, `wishlist_add`,
-`coupon_applied`, `search_query`, `checkout_abandoned`. Types live in
-`packages/shared-types/src/events.ts`.
+CI (`.github/workflows/ci.yml`) on push/PR: install, build shared types, migrate/seed Postgres, build apps, API integration tests, lint.
+
+---
+
+## Deployment
+
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for end-to-end setup.
+
+| Component | Target |
+|-----------|--------|
+| Velora | Vercel project, root directory `apps/web` |
+| Orbit | Vercel project, root directory `apps/admin` |
+| API + Postgres | Render via `render.yaml` (`apps/api/Dockerfile`) |
+
+After Render deploy, run migrate + seed in the service shell and set `GEMINI_API_KEY` if you want live AI insights. Point both frontends at `NEXT_PUBLIC_API_URL=https://your-api.onrender.com`.
+
+---
+
+## Database schema (migrations)
+
+| Migration | Contents |
+|-----------|----------|
+| `0001_init` | Users, products, orders, order items |
+| `0002_events` | Event type ENUM + events table |
+| `0003_analytics_summaries` | ML / KPI rollups |
+| `0004_banners` | Promo banners |
+| `0005_product_images` | Product gallery images |
+
+---
+
+## Notable product features
+
+- **Demo coupons** — e.g. `VELORA10`, `FUNKY50`, `WELCOME15` (`packages/shared-types/src/coupons.ts`)
+- **Recommendations** — collaborative + category heuristics on the products API
+- **ML pipeline** — churn / abandonment / conversion scores + four behavioral cohorts
+- **Gemini insights** — natural-language Q&A over dashboard context in Orbit
+- **Multi-store Orbit** — one live store (Velora) + three demo dashboards
+- **Dual-write analytics** — first-party Postgres always; RudderStack when configured
+)

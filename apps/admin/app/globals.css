@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0c0e14;
+  --surface: #141824;
+  --surface-elevated: #1c2233;
+  --border: #2a3145;
+  --text: #eef0f6;
+  --text-muted: #8b93a8;
+  --accent: #6ee7ff;
+  --accent-dim: #38bdf8;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border);
+  --color-foreground: var(--text);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.glow-card {
+  background: linear-gradient(145deg, var(--surface) 0%, var(--surface-elevated) 100%);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 0 1px rgba(110, 231, 255, 0.04), 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.chart-bar {
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dim) 100%);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.4s ease;
+}

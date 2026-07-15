@@ -2,73 +2,178 @@
 
 import Link from "next/link";
 import { useCart } from "@/lib/cart/CartContext";
+import { useCoupon } from "@/lib/coupon/CouponContext";
+import { trackRemoveFromCart } from "@/lib/analytics/track";
 import { buildPlaceholderImage } from "@/lib/placeholderImage";
-import { Button } from "@/components/ui/Button";
+import { formatPrice } from "@/lib/productMeta";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
+import { CouponField } from "@/components/cart/CouponField";
 
 export default function CartPage() {
   const { items, subtotal, removeItem, updateQuantity } = useCart();
+  const { applied } = useCoupon();
+
+  function handleRemove(productId: string, quantity: number) {
+    trackRemoveFromCart(productId, quantity);
+    removeItem(productId);
+  }
+
+  function handleDecrease(productId: string, currentQty: number) {
+    if (currentQty <= 1) {
+      handleRemove(productId, 1);
+      return;
+    }
+    trackRemoveFromCart(productId, 1);
+    updateQuantity(productId, currentQty - 1);
+  }
 
   if (items.length === 0) {
     return (
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-        <h1 className="text-xl font-semibold">Your cart is empty</h1>
-        <Link href="/products" className="rounded bg-slate-900 px-4 py-2 text-white hover:bg-slate-800">
-          Browse products
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-6 py-24">
+        <p className="font-display text-3xl font-medium text-foreground">Your bag is empty</p>
+        <span className="accent-line" />
+        <p className="mt-4 text-sm text-text-muted">Discover something you&apos;ll love</p>
+        <Link
+          href="/products"
+          className="mt-8 inline-block border border-brand-primary px-8 py-3 text-xs font-medium uppercase tracking-[0.15em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
+        >
+          Continue Shopping
         </Link>
       </main>
     );
   }
 
-  return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Your Cart</h1>
-      <div className="flex flex-col gap-4">
-        {items.map((item) => (
-          <div
-            key={item.productId}
-            className="flex items-center gap-4 rounded-lg border border-gray-200 p-4"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.imageUrl ?? buildPlaceholderImage(item.name, "#334155", 100, 100)}
-              alt={item.name}
-              className="h-20 w-20 rounded object-cover"
-            />
-            <div className="flex-1">
-              <p className="font-medium">{item.name}</p>
-              <p className="text-sm text-gray-500">${item.price.toFixed(2)}</p>
-            </div>
-            <select
-              aria-label={`Quantity for ${item.name}`}
-              value={item.quantity}
-              onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
-              className="rounded border border-gray-300 px-2 py-1"
-            >
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-            <p className="w-20 text-right font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
-            <button
-              type="button"
-              onClick={() => removeItem(item.productId)}
-              aria-label={`Remove ${item.name}`}
-              className="text-sm text-red-600 hover:underline"
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-      </div>
+  const deliveryFee = subtotal >= 499 ? 0 : 40;
+  const discount = applied?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal + deliveryFee - discount);
 
-      <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
-        <p className="text-lg font-semibold">Subtotal: ${subtotal.toFixed(2)}</p>
-        <Button disabled title="Checkout is coming in a future phase">
-          Checkout (coming soon)
-        </Button>
+  return (
+    <>
+      <CheckoutSteps current="bag" />
+      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8 lg:px-8">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shopping Bag" }]} />
+
+      <div className="mt-8 grid gap-12 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <SectionHeading
+            title="Your Bag"
+            subtitle={`${items.length} item${items.length > 1 ? "s" : ""}`}
+          />
+
+          <div className="mt-8 divide-y divide-border-subtle">
+            {items.map((item) => (
+              <div key={item.productId} className="flex gap-6 py-8 first:pt-0">
+                <Link href={`/products/${item.productId}`} className="shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.imageUrl ?? buildPlaceholderImage(item.name, "#7A4E35", 120, 150)}
+                    alt={item.name}
+                    className="h-32 w-28 object-cover bg-surface-muted"
+                  />
+                </Link>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <Link
+                    href={`/products/${item.productId}`}
+                    className="font-display text-lg leading-snug text-foreground transition-colors hover:text-brand-primary"
+                  >
+                    {item.name}
+                  </Link>
+                  <p className="mt-2 text-base font-medium">{formatPrice(item.price)}</p>
+                  <p className="mt-1 text-xs text-brand-success">Complimentary delivery eligible</p>
+
+                  <div className="mt-auto flex items-center gap-6 pt-4">
+                    <div className="flex items-center border border-border-warm">
+                      <button
+                        type="button"
+                        onClick={() => handleDecrease(item.productId, item.quantity)}
+                        className="px-3 py-2 text-sm transition-colors hover:bg-surface-muted"
+                        aria-label="Decrease quantity"
+                      >
+                        −
+                      </button>
+                      <span className="border-x border-border-warm px-4 py-2 text-sm">{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        className="px-3 py-2 text-sm transition-colors hover:bg-surface-muted"
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(item.productId, item.quantity)}
+                      className="text-xs uppercase tracking-[0.12em] text-text-muted transition-colors hover:text-brand-primary"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                <p className="shrink-0 font-medium">{formatPrice(item.price * item.quantity)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:col-span-1">
+          <div className="sticky top-40 border border-border-subtle bg-surface p-6 premium-shadow">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-text-muted">Order Summary</p>
+
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-text-muted">Subtotal</span>
+                <span>{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">Delivery</span>
+                {deliveryFee === 0 ? (
+                  <span>
+                    <span className="text-text-subtle line-through">₹40</span>{" "}
+                    <span className="text-brand-success">Complimentary</span>
+                  </span>
+                ) : (
+                  <span>{formatPrice(deliveryFee)}</span>
+                )}
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-brand-success">
+                  <span>Coupon ({applied?.coupon.code})</span>
+                  <span>−{formatPrice(discount)}</span>
+                </div>
+              )}
+            </div>
+
+            <CouponField subtotal={subtotal} />
+
+            <div className="my-5 border-t border-border-subtle" />
+
+            <div className="flex justify-between font-medium">
+              <span>Total</span>
+              <span className="font-display text-xl">{formatPrice(total)}</span>
+            </div>
+
+            {deliveryFee > 0 && (
+              <p className="mt-3 text-xs text-brand-success">
+                Add {formatPrice(499 - subtotal)} more for complimentary delivery
+              </p>
+            )}
+
+            <Link
+              href="/checkout"
+              className="mt-6 flex w-full items-center justify-center bg-brand-primary px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-white transition-colors hover:bg-brand-primary-hover"
+            >
+              Proceed to Checkout
+            </Link>
+            <p className="mt-4 text-center text-xs text-text-subtle">
+              Secure checkout · Easy returns
+            </p>
+          </div>
+        </div>
       </div>
     </main>
+    </>
   );
 }

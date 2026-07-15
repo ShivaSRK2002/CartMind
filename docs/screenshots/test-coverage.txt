@@ -1,0 +1,15 @@
+﻿API test coverage — Vitest + v8
+================================
+Date: 2026-07-15
+
+Test Files  5 passed | 7 skipped (12)
+Tests       15 passed | 32 todo (47)
+
+Coverage summary
+  Statements : 54.48% (789/1448)
+  Branches   : 63.82% (90/141)
+  Functions  : 69.38% (34/49)
+  Lines      : 54.48% (789/1448)
+
+HTML report: apps/api/coverage/index.html
+Screenshot: docs/screenshots/api-test-coverage.png

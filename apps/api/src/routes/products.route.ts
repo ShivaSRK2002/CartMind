@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { Product, ProductImage } from "cartmind-shared-types";
+import { resolveCoupon } from "cartmind-shared-types";
 import { pool } from "../db/pool";
+import { getRecommendations } from "../lib/recommendations";
+import { optionalAuth } from "../middleware/optionalAuth";
 import { sendError, sendSuccess } from "../utils/response";
 
 export const productsRouter = Router();
@@ -53,9 +56,45 @@ const listQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(60).default(12),
   category: z.string().min(1).optional(),
   search: z.string().min(1).optional(),
+  ids: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(",").filter(Boolean) : [])),
 });
 
 const idParamSchema = z.string().uuid();
+
+const recommendationsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(24).default(6),
+  seedProductIds: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(",").filter(Boolean) : [])),
+  excludeIds: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(",").filter(Boolean) : [])),
+});
+
+productsRouter.get("/recommendations", optionalAuth, async (req, res, next) => {
+  const parsed = recommendationsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    sendError(res, "Invalid query parameters", 400);
+    return;
+  }
+
+  try {
+    const items = await getRecommendations({
+      limit: parsed.data.limit,
+      userId: req.user?.sub,
+      seedProductIds: parsed.data.seedProductIds,
+      excludeIds: parsed.data.excludeIds,
+    });
+    sendSuccess(res, { items });
+  } catch (err) {
+    next(err);
+  }
+});
 
 productsRouter.get("/", async (req, res, next) => {
   const parsed = listQuerySchema.safeParse(req.query);
@@ -64,12 +103,16 @@ productsRouter.get("/", async (req, res, next) => {
     return;
   }
 
-  const { page, pageSize, category, search } = parsed.data;
+  const { page, pageSize, category, search, ids } = parsed.data;
   const offset = (page - 1) * pageSize;
 
   const conditions: string[] = [];
   const values: unknown[] = [];
 
+  if (ids.length > 0) {
+    values.push(ids);
+    conditions.push(`id = ANY($${values.length}::uuid[])`);
+  }
   if (category) {
     values.push(category);
     conditions.push(`category = $${values.length}`);

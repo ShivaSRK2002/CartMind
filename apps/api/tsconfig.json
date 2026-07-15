@@ -13,6 +13,6 @@
     "resolveJsonModule": true,
     "declaration": true
   },
-  "include": ["src"],
+  "include": ["src", "src/openapi.json"],
   "exclude": ["node_modules", "dist"]
 }

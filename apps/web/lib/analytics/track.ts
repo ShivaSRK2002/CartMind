@@ -1,25 +1,52 @@
 import type { ApiObject } from "@rudderstack/analytics-js";
 import type { BehavioralEventName, BehavioralEventPayloadMap, CartLineItem } from "cartmind-shared-types";
+import { recordProductView } from "@/lib/recommendations/viewHistory";
 import { getAnalytics } from "./client";
+import { getAnalyticsSessionId, getAnonymousId } from "./session";
 
 const isDebugEnabled = process.env.NEXT_PUBLIC_RUDDERSTACK_DEBUG === "true";
+
+function persistEvent<K extends BehavioralEventName>(
+  eventName: K,
+  payload: BehavioralEventPayloadMap[K],
+): void {
+  if (typeof window === "undefined") return;
+
+  const body = JSON.stringify({
+    eventType: eventName,
+    sessionId: getAnalyticsSessionId(),
+    anonymousId: getAnonymousId(),
+    payload,
+    occurredAt: new Date().toISOString(),
+  });
+
+  fetch("/api/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).catch(() => {
+    if (isDebugEnabled) {
+      console.warn(`[Pipeline] failed to persist event: ${eventName}`);
+    }
+  });
+}
 
 function sendEvent<K extends BehavioralEventName>(eventName: K, payload: BehavioralEventPayloadMap[K]): void {
   if (isDebugEnabled) {
     console.log(`[RudderStack] ${eventName}`, payload);
   }
 
+  persistEvent(eventName, payload);
+
   const analytics = getAnalytics();
   if (!analytics) {
     if (isDebugEnabled) {
-      console.warn(`[RudderStack] not initialized, event dropped: ${eventName}`);
+      console.warn(`[RudderStack] not initialized, CDP event skipped: ${eventName}`);
     }
     return;
   }
 
-  // @rudderstack/analytics-js requires an indexed ApiObject; our nominal
-  // payload interfaces are structurally compatible but lack an index
-  // signature, so an explicit cast is needed at this SDK boundary.
   analytics.track(eventName, payload as unknown as ApiObject);
 }
 
@@ -29,6 +56,7 @@ export function trackProductViewed(product: {
   category: string;
   price: number;
 }): void {
+  recordProductView(product.id);
   sendEvent("product_viewed", {
     productId: product.id,
     productName: product.name,
