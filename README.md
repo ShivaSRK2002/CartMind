@@ -75,7 +75,8 @@ cartMindAi/
 ├── apps/
 │   ├── web/                 # Velora — Next.js 16 storefront (App Router)
 │   ├── admin/               # Orbit — Next.js 16 analytics dashboard
-│   └── api/                 # Express REST API (auth, catalog, orders, events, ML, Gemini)
+│   ├── api/                 # Express REST API (auth, catalog, orders, events, ML fallback, Gemini)
+│   └── ml/                  # Python/scikit-learn + XGBoost training & scoring pipeline
 ├── packages/
 │   └── shared-types/        # Events, models, coupons, ML types, API envelope
 ├── db/
@@ -104,7 +105,7 @@ cartMindAi/
 | Auth | JWT (`jsonwebtoken` / `jose`), bcrypt, httpOnly cookies |
 | Database | PostgreSQL 16 (`pg`), `node-pg-migrate` |
 | Analytics | First-party events + optional RudderStack |
-| ML | Pure TypeScript (sigmoid risk scores + seeded k-means) |
+| ML | Python/scikit-learn + XGBoost (`apps/ml`) — real trained models; TS sigmoid/k-means fallback when the pipeline hasn't been run |
 | AI insights | Google Gemini REST (optional; rule-based fallback) |
 | Deploy | Vercel (web + admin), Render (API + DB), GitHub Actions CI |
 
@@ -141,10 +142,20 @@ Session and anonymous IDs are managed client-side. Optional auth attaches `user_
 
 | Capability | Behavior |
 |------------|----------|
-| **Product recommendations** | Purchase history, co-purchase frequency, category affinity, recent view seeds; popularity fallback when sparse |
-| **Risk scores** | Churn, cart-abandonment, and conversion propensity (hand-tuned sigmoid / ensemble features from orders + 30d events) |
-| **Segmentation** | Seeded k-means → `high-value` \| `at-risk` \| `impulse` \| `browser` |
-| **Persistence** | Pipeline summary written to `analytics_summaries` (model label `velora-ml-v1`) |
+| **Product recommendations** | Item-item collaborative filtering (`apps/ml`, cosine similarity) when trained, blended with purchase history, co-purchase frequency, category affinity, and popularity fallback when sparse |
+| **Risk scores** | Churn (Logistic Regression / Random Forest), cart-abandonment & conversion (XGBoost) from `apps/ml`; hand-tuned TS sigmoid ensemble as a no-setup fallback |
+| **Segmentation** | K-Means (`apps/ml`, scikit-learn) → `high-value` \| `at-risk` \| `impulse` \| `browser`; seeded TS k-means fallback |
+| **Persistence** | `apps/ml` writes to `ml_user_scores`, `ml_product_similarity`, `ml_model_metrics`; TS fallback still summarizes to `analytics_summaries` (model label `velora-ml-v1`) |
+
+See **[apps/ml/README.md](apps/ml/README.md)** for the full pipeline — how the four models map to the use-case doc, the synthetic training approach, and setup/run commands. Latest trained metrics:
+
+| Model | Algorithm | Accuracy | Precision | Recall | ROC-AUC |
+|-------|-----------|----------|-----------|--------|---------|
+| Churn | Logistic Regression | 80.9% | 86.1% | 69.4% | **88.3%** |
+| Cart abandonment | XGBoost | **84.6%** | 85.4% | 98.6% | 76.6% |
+| Conversion | XGBoost | 82.5% | 78.2% | 77.4% | 91.7% |
+
+(Trained on synthetic data — see `apps/ml/src/cartmind_ml/synthetic.py` — then applied to the live Velora database. Re-run `npm run ml:pipeline` to refresh.)
 
 ### Orbit insights
 
@@ -224,6 +235,7 @@ Responses use the shared envelope: `{ success, data }` or `{ success: false, err
 - Node.js 20 (see `.nvmrc`)
 - npm 10+
 - Docker Desktop (or Docker Engine + Compose) for local PostgreSQL
+- Python 3.11+ (optional — only needed to run the real ML pipeline in `apps/ml`; the app works without it, using the TS fallback scorer)
 
 ---
 
@@ -250,6 +262,7 @@ npm run dev
 | `npm run db:migrate` | Apply SQL migrations |
 | `npm run db:seed` | Demo users, 30 products, banners, order history |
 | `npm run build` / `lint` / `test` | Workspace-wide |
+| `npm run ml:pipeline` | Train + score the Python ML pipeline (see [apps/ml/README.md](apps/ml/README.md) for setup) |
 
 Postgres defaults: `localhost:5432`, user/password/db `cartmind` / `cartmind` / `cartmind`.
 
@@ -337,6 +350,7 @@ After Render deploy, run migrate + seed in the service shell and set `GEMINI_API
 | `0003_analytics_summaries` | ML / KPI rollups |
 | `0004_banners` | Promo banners |
 | `0005_product_images` | Product gallery images |
+| `0006_ml_pipeline` | `ml_user_scores`, `ml_product_similarity`, `ml_model_metrics` (written by `apps/ml`) |
 
 ---
 

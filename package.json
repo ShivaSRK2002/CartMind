@@ -17,7 +17,10 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspace=apps/api",
-    "screenshots": "node scripts/capture-screenshots.mjs"
+    "screenshots": "node scripts/capture-screenshots.mjs",
+    "ml:train": "python apps/ml/pipeline.py train",
+    "ml:score": "python apps/ml/pipeline.py score",
+    "ml:pipeline": "python apps/ml/pipeline.py all"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

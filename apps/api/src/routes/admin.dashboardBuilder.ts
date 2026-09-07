@@ -1,5 +1,6 @@
 import type { StoreDashboard } from "cartmind-shared-types";
 import { buildDemoMlInsights, computeMlPipeline } from "../lib/ml/scoring";
+import { computeMlPipelineFromPython } from "../lib/ml/pythonScores";
 import {
   buildDemoDashboard,
   getStoreById,
@@ -10,6 +11,16 @@ import {
   fetchLiveKpis,
   fetchRevenueTrend,
 } from "./admin.dashboard";
+
+/**
+ * Prefers scores from the Python/scikit-learn pipeline (apps/ml) when it has
+ * been trained and run; falls back to the TS heuristic scorer otherwise so
+ * the dashboard works out of the box without a Python setup.
+ */
+async function resolveMlPipeline() {
+  const pythonPipeline = await computeMlPipelineFromPython();
+  return pythonPipeline ?? computeMlPipeline();
+}
 
 export async function buildStoreDashboard(storeId: string): Promise<StoreDashboard | null> {
   const store = getStoreById(storeId);
@@ -30,7 +41,7 @@ export async function buildStoreDashboard(storeId: string): Promise<StoreDashboa
     fetchLiveKpis(),
     fetchLiveEvents(),
     fetchRevenueTrend(),
-    computeMlPipeline(),
+    resolveMlPipeline(),
   ]);
 
   return {

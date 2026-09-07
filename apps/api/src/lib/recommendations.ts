@@ -38,6 +38,30 @@ export async function getRecommendations(options: {
 
   const scored = new Map<string, number>();
 
+  const similaritySeeds = [...new Set([...seeds])];
+  if (similaritySeeds.length > 0) {
+    try {
+      const similar = await pool.query<{ similar_product_id: string; similarity: string }>(
+        `SELECT similar_product_id, similarity
+         FROM ml_product_similarity
+         WHERE product_id = ANY($1::uuid[])
+         ORDER BY similarity DESC
+         LIMIT 30`,
+        [similaritySeeds],
+      );
+      for (const row of similar.rows) {
+        if (!exclude.includes(row.similar_product_id)) {
+          scored.set(
+            row.similar_product_id,
+            (scored.get(row.similar_product_id) ?? 0) + Number(row.similarity) * 6,
+          );
+        }
+      }
+    } catch {
+      // ml_product_similarity not populated yet (Python pipeline not run) — heuristics below still apply.
+    }
+  }
+
   if (userId) {
     const purchased = await pool.query<{ product_id: string }>(
       `SELECT DISTINCT oi.product_id
