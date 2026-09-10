@@ -105,6 +105,38 @@ from the Databricks-computed features. If `ml_user_features` is empty it
 silently falls back to the live SQL aggregate, so nothing breaks without this
 pipeline.
 
+## Dashboard (Databricks AI/BI)
+
+The visualization layer runs natively in Databricks — no Power BI Desktop
+needed. Queries are in [`dashboard_queries.sql`](dashboard_queries.sql).
+
+1. **Dashboards** (left sidebar) → **Create dashboard** → name it `CartMind AI`.
+2. **Data** tab → **Create from SQL** → paste the first block from
+   `dashboard_queries.sql`, name the dataset exactly as its comment says
+   (`kpis`), **Run**, **Save**. Repeat for all 8 datasets. (A serverless SQL
+   warehouse starts automatically on first run.)
+3. **Canvas** tab → **Add a visualization** for each widget below → pick the
+   dataset → set the type and fields:
+
+   | Widget | Dataset | Type | Fields |
+   |--------|---------|------|--------|
+   | Total revenue / Orders / AOV | `kpis` | 3× Counter | one measure each |
+   | Conversion % / Cart-abandon % | `rates` | 2× Counter | one measure each |
+   | Revenue & orders over time | `revenue_trend` | Line | X `day`, Y `revenue`, `orders` |
+   | Conversion funnel | `conversion_funnel` | Bar (horizontal) | X `events`, Y `stage` |
+   | Event mix by day | `events_over_time` | Area (stacked) | X `day`, Y `event_count`, color `event_type` |
+   | Customers by segment | `segments` | Pie | angle `customers`, color `segment` |
+   | Avg LTV by segment | `segments` | Bar | X `segment`, Y `avg_ltv` |
+   | Customer detail | `customers` | Table | all columns |
+   | Top products by engagement | `top_products` | Bar | X `engagement_score`, Y `product_id` |
+
+4. **Publish** (top-right) → share / screenshot for the README.
+
+Mirrors the use-case doc's dashboard modules — revenue trends, conversion
+funnels, event analytics, segmentation — the part the doc assigns to Power
+BI. Churn/purchase-intent scores stay in Orbit (backed by the trained
+models in `apps/ml`).
+
 ## Files
 
 | File | Runs on | Purpose |
@@ -112,3 +144,4 @@ pipeline.
 | `01_export_from_postgres.py` | local | Postgres → parquet + zip |
 | `02_medallion_pipeline.py` | Databricks (serverless) **or** local `pyspark` | Bronze → Silver → Gold |
 | `03_load_gold_to_postgres.py` | local | `gold_user_features.csv` → `ml_user_features` |
+| `dashboard_queries.sql` | Databricks SQL | 8 datasets for the AI/BI dashboard |
