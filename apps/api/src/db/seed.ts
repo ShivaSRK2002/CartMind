@@ -9,7 +9,6 @@ const SEED_FILE = path.resolve(__dirname, "../../../../db/seed/seed.sql");
 const THREE_YEARS_MS = 3 * 365 * 24 * 60 * 60 * 1000;
 const ORDERS_PER_CUSTOMER_MIN = 20;
 const ORDERS_PER_CUSTOMER_MAX = 30;
-const IMAGES_PER_PRODUCT = 3;
 const GALLERY_SHADE_STEPS = [0, 15, -15];
 
 interface ProductRow {

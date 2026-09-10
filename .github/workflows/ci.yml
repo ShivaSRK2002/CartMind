@@ -58,3 +58,64 @@ jobs:
 
       - name: Lint
         run: npm run lint --workspaces --if-present
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: cartmind
+          POSTGRES_PASSWORD: cartmind
+          POSTGRES_DB: cartmind
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cartmind -d cartmind"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://cartmind:cartmind@localhost:5432/cartmind
+      JWT_SECRET: ci-test-jwt-secret
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared types
+        run: npm run build --workspace=packages/shared-types
+
+      - name: Run database migrations
+        run: npm run db:migrate
+
+      - name: Seed database
+        run: npm run db:seed
+
+      - name: Install Playwright browser
+        run: npm exec --workspace=apps/web -- playwright install --with-deps chromium
+
+      - name: Run storefront E2E (browse -> cart -> checkout -> confirmation)
+        run: npm run test:e2e
+        env:
+          CI: "true"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

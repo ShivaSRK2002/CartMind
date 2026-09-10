@@ -11,6 +11,8 @@
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:admin": "npm run dev --workspace=apps/admin",
     "dev": "concurrently -n web,api,admin -c blue,green,magenta \"npm:dev:web\" \"npm:dev:api\" \"npm:dev:admin\"",
+  "dev:e2e": "concurrently -n web,api -c blue,green \"npm:dev:web\" \"npm:dev:api\"",
+  "test:e2e": "npm run test:e2e --workspace=apps/web",
     "db:migrate": "npm run migrate --workspace=apps/api",
     "db:seed": "npm run seed --workspace=apps/api",
     "build": "npm run build --workspaces --if-present",

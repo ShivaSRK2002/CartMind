@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { Product, ProductImage } from "cartmind-shared-types";
-import { resolveCoupon } from "cartmind-shared-types";
 import { pool } from "../db/pool";
 import { getRecommendations } from "../lib/recommendations";
 import { optionalAuth } from "../middleware/optionalAuth";
