@@ -22,7 +22,8 @@
     "ml:score": "node scripts/py.mjs apps/ml/pipeline.py score",
     "ml:pipeline": "node scripts/py.mjs apps/ml/pipeline.py all",
     "ml:export": "node scripts/py.mjs apps/ml/databricks/01_export_from_postgres.py",
-    "ml:medallion": "node scripts/py.mjs apps/ml/databricks/02_medallion_pipeline.py --input apps/ml/databricks/data --output apps/ml/databricks/data/out"
+    "ml:medallion": "node scripts/py.mjs apps/ml/databricks/02_medallion_pipeline.py --input apps/ml/databricks/data --output apps/ml/databricks/data/out",
+    "ml:load-gold": "node scripts/py.mjs apps/ml/databricks/03_load_gold_to_postgres.py"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

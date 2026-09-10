@@ -94,9 +94,9 @@ Interactive Compute" in *Compute* is what the notebook uses.
 ### 3. Load Gold back into Postgres (local)
 
 ```bash
-python apps/ml/databricks/03_load_gold_to_postgres.py --features ~/Downloads/gold_user_features.csv
+npm run ml:load-gold -- --features ~/Downloads/gold_user_features.csv
 # or, from a local dry-run:
-python apps/ml/databricks/03_load_gold_to_postgres.py --features apps/ml/databricks/data/out/gold_csv/gold_user_features.csv
+npm run ml:load-gold -- --features apps/ml/databricks/data/out/gold_csv/gold_user_features.csv
 npm run ml:score
 ```
 
