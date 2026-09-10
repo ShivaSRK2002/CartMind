@@ -16,7 +16,7 @@ function buildFallbackReply(message: string, context: string): string {
       "Based on current ML scores, the At-Risk cohort shows elevated churn probability. " +
       "Prioritize win-back emails with personalized coupons (VELORA10) for users with high " +
       "checkout_abandoned events but zero recent payment_success. " +
-      "Set GEMINI_API_KEY for deeper AI analysis."
+      "Set a valid GEMINI_API_KEY for deeper AI analysis."
     );
   }
 
@@ -39,13 +39,13 @@ function buildFallbackReply(message: string, context: string): string {
   return (
     `Insight for "${message}": Review the behavioral event breakdown and ML risk scores in context. ` +
     `Key signals: ${context.split("\n").slice(0, 8).join(" | ")}. ` +
-    "Add GEMINI_API_KEY to enable full Gemini 2.5 Flash analysis."
+    "Set a valid GEMINI_API_KEY to enable full Gemini analysis."
   );
 }
 
 export async function generateInsight(message: string, context: string): Promise<GeminiResult> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+  const modelName = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
 
   if (!apiKey) {
     return {
@@ -93,7 +93,10 @@ export async function generateInsight(message: string, context: string): Promise
     }
 
     return { reply: text, model: modelName, usedFallback: false };
-  } catch {
+  } catch (err) {
+    // Surface the reason in the server logs so a misconfigured key / model is
+    // diagnosable, then fall back so the feature is never unavailable.
+    console.warn("[gemini] falling back to rule-based reply:", (err as Error).message);
     return {
       reply: buildFallbackReply(message, context),
       model: "rule-based-fallback",

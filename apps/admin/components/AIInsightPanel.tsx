@@ -54,7 +54,7 @@ export function AIInsightPanel({ storeId }: AIInsightPanelProps) {
         <div>
           <h3 className="text-sm font-medium">AI Insight Assistant</h3>
           <p className="mt-1 text-xs text-muted">
-            {model ? `Powered by ${model}` : "Gemini 2.5 Flash"}
+            {model ? `Powered by ${model}` : "Google Gemini"}
           </p>
         </div>
         <span className="rounded-full bg-accent/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-accent">

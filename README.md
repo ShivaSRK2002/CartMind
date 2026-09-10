@@ -310,7 +310,7 @@ Rollback last migration: `npm run migrate:down --workspace=apps/api`
 | `DATABASE_URL` | Postgres connection string |
 | `JWT_SECRET` | Token signing (must match frontends) |
 | `GEMINI_API_KEY` | Optional Orbit AI chat |
-| `GEMINI_MODEL` | Default `gemini-2.0-flash` |
+| `GEMINI_MODEL` | Default `gemini-flash-latest` |
 | `RUDDERSTACK_WRITE_KEY` / `RUDDERSTACK_DATA_PLANE_URL` | Optional server CDP |
 
 ### Velora (`apps/web/.env.local`)
