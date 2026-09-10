@@ -78,12 +78,21 @@ export async function fetchLiveKpis(): Promise<DashboardKpis> {
   );
   const eventVolume24h = Number(eventResult.rows[0]?.count ?? 0);
 
-  const viewsResult = await pool.query<{ count: string }>(
-    `SELECT count(*) AS count FROM events
-     WHERE event_type = 'product_viewed' AND occurred_at >= now() - interval '7 days'`,
+  // Conversion rate over a consistent 30-day window: sessions that reached
+  // payment_success as a share of sessions that viewed a product.
+  const convResult = await pool.query<{ viewed: string; purchased: string }>(
+    `SELECT
+       count(DISTINCT session_id) FILTER (WHERE event_type = 'product_viewed')  AS viewed,
+       count(DISTINCT session_id) FILTER (WHERE event_type = 'payment_success') AS purchased
+     FROM events
+     WHERE occurred_at >= now() - interval '30 days'`,
   );
-  const views = Number(viewsResult.rows[0]?.count ?? 0);
-  const conversionRate = views > 0 ? Number(((orders / views) * 100).toFixed(2)) : 0;
+  const viewedSessions = Number(convResult.rows[0]?.viewed ?? 0);
+  const purchasedSessions = Number(convResult.rows[0]?.purchased ?? 0);
+  const conversionRate =
+    viewedSessions > 0
+      ? Number(Math.min(100, (purchasedSessions / viewedSessions) * 100).toFixed(2))
+      : 0;
 
   return {
     revenue,
