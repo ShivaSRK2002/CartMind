@@ -9,8 +9,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Must be IDENTICAL to the JWT_SECRET set on the Vercel projects
+      # (Velora + Orbit) so they can verify the session cookie.
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: velora-db

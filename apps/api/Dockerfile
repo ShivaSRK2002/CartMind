@@ -28,6 +28,7 @@ COPY --from=builder /app/packages/shared-types/dist packages/shared-types/dist
 COPY --from=builder /app/apps/api/dist apps/api/dist
 COPY --from=builder /app/apps/api/src/openapi.json apps/api/dist/openapi.json
 COPY db/migrations db/migrations
+COPY db/seed db/seed
 
 WORKDIR /app/apps/api
 EXPOSE 4000

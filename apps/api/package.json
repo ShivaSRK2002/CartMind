@@ -11,6 +11,7 @@
     "migrate": "node-pg-migrate up --migrations-dir ../../db/migrations --migration-file-language sql",
     "migrate:down": "node-pg-migrate down --migrations-dir ../../db/migrations --migration-file-language sql",
     "seed": "tsx src/db/seed.ts",
+    "seed:prod": "node dist/db/seed.js",
     "lint": "eslint src --ext .ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
