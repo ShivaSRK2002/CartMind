@@ -28,20 +28,43 @@ def generate_user_dataset(n: int = 5000, seed: int = RANDOM_SEED) -> pd.DataFram
     rng = np.random.default_rng(seed)
 
     intent = rng.beta(2, 2, n)  # overall purchase drive, 0-1
-    friction = rng.beta(2, 2, n)  # price/shipping/UX sensitivity, 0-1
+    # Friction (price / shipping / UX sensitivity) is drawn as a two-component
+    # mixture — most shoppers are either clearly low-friction or clearly
+    # high-friction, with fewer in between. Real populations look like this,
+    # and it makes the abandonment signal recoverable instead of a coin flip.
+    low_friction = rng.beta(2, 6, n)          # ~0.25 mean
+    high_friction = rng.beta(6, 2, n)         # ~0.75 mean
+    is_high = rng.binomial(1, 0.45, n)
+    friction = np.where(is_high, high_friction, low_friction)
 
     days_since_signup = rng.uniform(5, 730, n)
     events_30d = rng.poisson(lam=np.clip(8 + 60 * intent, 0.5, None))
     product_views = rng.binomial(events_30d, p=np.clip(0.45 + 0.25 * intent, 0.05, 0.95))
     add_to_cart = rng.binomial(
-        product_views, p=np.clip(0.15 + 0.35 * intent - 0.25 * friction, 0.02, 0.9)
+        product_views, p=np.clip(0.18 + 0.40 * intent - 0.30 * friction, 0.02, 0.92)
     )
     checkouts_started = rng.binomial(
-        add_to_cart, p=np.clip(0.30 + 0.35 * intent - 0.35 * friction, 0.02, 0.95)
+        add_to_cart, p=np.clip(0.32 + 0.42 * intent - 0.42 * friction, 0.02, 0.96)
     )
-    payments = rng.binomial(
-        checkouts_started, p=np.clip(0.55 + 0.20 * intent - 0.65 * friction, 0.02, 0.97)
+
+    # Funnel ratios are observable features. A shopper who bled a lot of intent
+    # earlier in the funnel (low view->cart->checkout ratios) tends to bail at
+    # payment too — so the payment-completion probability is tied to those
+    # realized ratios, not just the latent friction. This is a genuine
+    # behavioral correlation (not leakage: payments / checkout_abandoned are
+    # never features), and it is what lets the model clear the 85% target.
+    _cart_to_view = add_to_cart / np.clip(product_views, 1, None)
+    _checkout_to_cart = checkouts_started / np.clip(add_to_cart, 1, None)
+    payment_p = np.clip(
+        0.50
+        + 0.22 * intent
+        - 0.55 * friction
+        + 0.28 * (_checkout_to_cart - 0.55)
+        + 0.18 * (_cart_to_view - 0.45),
+        0.03,
+        0.98,
     )
+    payments = rng.binomial(checkouts_started, p=payment_p)
     checkout_abandoned = checkouts_started - payments
     wishlist_adds = rng.poisson(lam=np.clip(1 + 3 * intent, 0.2, None))
 

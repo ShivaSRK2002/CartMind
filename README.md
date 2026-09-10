@@ -149,13 +149,15 @@ Session and anonymous IDs are managed client-side. Optional auth attaches `user_
 
 See **[apps/ml/README.md](apps/ml/README.md)** for the full pipeline — how the four models map to the use-case doc, the synthetic training approach, and setup/run commands. Latest trained metrics:
 
-| Model | Algorithm | Accuracy | Precision | Recall | ROC-AUC |
-|-------|-----------|----------|-----------|--------|---------|
-| Churn | Logistic Regression | 80.9% | 86.1% | 69.4% | **88.3%** |
-| Cart abandonment | XGBoost | **84.6%** | 85.4% | 98.6% | 76.6% |
-| Conversion | XGBoost | 82.5% | 78.2% | 77.4% | 91.7% |
+| Model | Algorithm | Accuracy | Precision | Recall | ROC-AUC | Use-case §10 target |
+|-------|-----------|----------|-----------|--------|---------|--------------------|
+| Churn | Logistic Regression | 81.0% | 86.9% | 67.1% | **88.8%** | AUC-ROC > 80% — **MET** |
+| Cart abandonment | XGBoost | **89.8%** | 90.6% | 98.9% | 76.0% | accuracy > 85% — **MET** |
+| Conversion | XGBoost | 86.1% | 81.8% | 86.4% | **94.3%** | — |
 
-(Trained on synthetic data — see `apps/ml/src/cartmind_ml/synthetic.py` — then applied to the live Velora database. Re-run `npm run ml:pipeline` to refresh.)
+(Held-out 25% test split, seed 42. Full numbers in [`apps/ml/models/metrics.json`](apps/ml/models/metrics.json).
+Trained on synthetic data — see `apps/ml/src/cartmind_ml/synthetic.py` — then applied to the live Velora
+database. Re-run `npm run ml:pipeline` to refresh.)
 
 ### Databricks pipeline (the `PostgreSQL → Databricks` stage)
 

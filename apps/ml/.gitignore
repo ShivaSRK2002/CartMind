@@ -1,6 +1,5 @@
 .venv/
 models/*.joblib
-models/metrics.json
 __pycache__/
 *.pyc
 .env

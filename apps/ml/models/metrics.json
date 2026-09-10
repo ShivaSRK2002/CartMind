@@ -1,0 +1,62 @@
+{
+  "model_version": "cartmind-ml-py-v1",
+  "trained_on": "synthetic (n=5000)",
+  "churn": {
+    "algorithm": "Logistic Regression",
+    "features": [
+      "order_count",
+      "days_since_last_order",
+      "events_30d",
+      "days_since_signup",
+      "product_views"
+    ],
+    "accuracy": 0.8096,
+    "precision": 0.8689,
+    "recall": 0.6709,
+    "roc_auc": 0.8883
+  },
+  "cart_abandonment": {
+    "algorithm": "XGBoost (Gradient Boosting)",
+    "features": [
+      "cart_to_view_ratio",
+      "checkout_to_cart_ratio",
+      "checkouts_started",
+      "add_to_cart",
+      "events_30d"
+    ],
+    "accuracy": 0.8976,
+    "precision": 0.9057,
+    "recall": 0.9894,
+    "roc_auc": 0.7599
+  },
+  "conversion": {
+    "algorithm": "XGBoost (Gradient Boosting)",
+    "features": [
+      "cart_to_view_ratio",
+      "checkout_to_cart_ratio",
+      "wishlist_adds",
+      "events_30d",
+      "days_since_signup"
+    ],
+    "accuracy": 0.8608,
+    "precision": 0.8179,
+    "recall": 0.8642,
+    "roc_auc": 0.9425
+  },
+  "segmentation": {
+    "algorithm": "K-Means Clustering (k=4)",
+    "features": [
+      "order_count",
+      "lifetime_value",
+      "events_30d",
+      "product_views",
+      "payments"
+    ],
+    "cluster_sizes": {
+      "at-risk": 2136,
+      "browser": 825,
+      "high-value": 189,
+      "impulse": 1850
+    }
+  }
+}
