@@ -65,4 +65,28 @@ describeIfDb("GET /api/v1/products/recommendations", () => {
     const res = await api().get("/api/v1/products/recommendations?limit=6").expect(200);
     expect(res.body.data.items.length).toBeGreaterThan(0);
   });
+
+  it("personalizes recommendations for an authenticated buyer", async () => {
+    const login = await api()
+      .post("/api/v1/auth/login")
+      .send({ email: "alice@example.com", password: "password123" });
+    const token = login.body.data.token as string;
+
+    const list = await api().get("/api/v1/products?pageSize=2");
+    const seed = list.body.data.items[0].id as string;
+    const exclude = list.body.data.items[1].id as string;
+
+    const res = await api()
+      .get(`/api/v1/products/recommendations?seedProductIds=${seed}&excludeIds=${exclude}&limit=8`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(Array.isArray(res.body.data.items)).toBe(true);
+    expect(res.body.data.items.length).toBeLessThanOrEqual(8);
+    for (const p of res.body.data.items) expect(p.id).not.toBe(exclude);
+  });
+
+  it("returns 400 for an invalid limit", async () => {
+    await api().get("/api/v1/products/recommendations?limit=999").expect(400);
+  });
 });

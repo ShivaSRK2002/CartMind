@@ -7,28 +7,29 @@ Captured: 2026-09-10 (Vitest + `@vitest/coverage-v8`, against seeded Postgres)
 | Metric | Value |
 |--------|-------|
 | Test files | **11 passed**, 0 skipped |
-| Tests | **52 passed**, 0 todo |
-| Statements | **78.22%** (1193 / 1525) |
-| Branches | **71.48%** (173 / 242) |
-| Functions | **84.61%** (44 / 52) |
-| Lines | **78.22%** (1193 / 1525) |
+| Tests | **63 passed**, 0 todo |
+| Statements | **89.31%** (1362 / 1525) |
+| Branches | **77.14%** (216 / 280) |
+| Functions | **92.30%** (48 / 52) |
+| Lines | **89.31%** (1362 / 1525) |
 
 ## Coverage by area
 
-- `src/routes` — **86.9%** (auth, products, orders, banners, admin, events, health all DB-integration tested)
-- `src/lib/ml` — **81%** (predict 100%, k-means 96.8%, scoring 75.9%, pythonScores 69.1%)
-- `src/middleware/auth` — **89.3%**
-- `src/utils`, `src/db`, `src/app` — **100%**
+- `src/routes` — **90.9%** (auth, products, orders, banners, admin, events, health all DB-integration tested)
+- `src/lib/ml` — **94.4%** (predict 100%, scoring 99.5%, k-means 96.8%, pythonScores 69.1%)
+- `src/lib` — **81.8%** (recommendations 89%, stores 100%, insightContext 87.8%; `gemini.ts` live-API path uncovered by design)
+- `src/services`, `src/utils`, `src/db`, `src/app` — **100%**
+- `src/middleware` — auth 89.3%, optionalAuth 91.7%
 
 ## Test suites
 
 | Suite | Tests |
 |-------|-------|
 | `auth.route.integration.test.ts` | 9 — register/login/me, 401/403/409 paths |
-| `products.route.integration.test.ts` | 9 — list/paginate/filter/search, detail, recommendations |
+| `products.route.integration.test.ts` | 11 — list/paginate/filter/search, detail, recommendations (seeded + personalized + 400) |
 | `orders.route.integration.test.ts` | 7 — create (coupon, stock, 400/401), me, by id, 404 |
-| `admin.route.integration.test.ts` | 8 — stores, customers, dashboard (KPIs/events/ML/cohorts), insights chat, RBAC |
-| `events.route.integration.test.ts` | 4 — ingest, validation, auth attach |
+| `admin.route.integration.test.ts` | 12 — stores, customers, live + demo dashboards, insights chat, RBAC (401/403) |
+| `events.route.integration.test.ts` | 11 — single + batch ingest, validation, bad timestamp, auth attach |
 | `pipeline.integration.test.ts` | 3 — end-to-end ML/dashboard |
 | `health.route*.test.ts` | 6 — basic, verbose, invalid query |
 | `coupons.test.ts`, `predict.test.ts` | 5 — pure-unit |

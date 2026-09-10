@@ -67,6 +67,28 @@ describeIfDb("Admin routes", () => {
       .expect(404);
   });
 
+  it("GET /admin/dashboard/<demo store> returns a synthetic dashboard", async () => {
+    const res = await api()
+      .get("/api/v1/admin/dashboard/bloommart")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+    expect(res.body.data.store.status).toBe("demo");
+    expect(res.body.data.kpis).toHaveProperty("revenue");
+    expect(res.body.data.cohorts.length).toBe(4);
+    expect(res.body.data.revenueTrend.length).toBe(7);
+  });
+
+  it("GET /admin/dashboard/velora returns 401 without a token", async () => {
+    await api().get("/api/v1/admin/dashboard/velora").expect(401);
+  });
+
+  it("GET /admin/customers returns 403 for a customer token", async () => {
+    await api()
+      .get("/api/v1/admin/customers")
+      .set("Authorization", `Bearer ${customerToken}`)
+      .expect(403);
+  });
+
   it("POST /admin/insights/chat returns a reply (Gemini or rule-based fallback)", async () => {
     const res = await api()
       .post("/api/v1/admin/insights/chat")
