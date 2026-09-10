@@ -27,7 +27,14 @@ function randomOrderStatus(): "paid" | "cancelled" | "pending" {
   return "pending";
 }
 
+const RECENT_WINDOW_MS = 10 * 24 * 60 * 60 * 1000;
+
 function randomPastDate(): Date {
+  // ~18% of orders land in the last 10 days so the 7-day revenue-trend chart
+  // and "events (24h)" KPI have signal; the rest spread across 3 years.
+  if (Math.random() < 0.18) {
+    return new Date(Date.now() - Math.random() * RECENT_WINDOW_MS);
+  }
   return new Date(Date.now() - Math.random() * THREE_YEARS_MS);
 }
 
