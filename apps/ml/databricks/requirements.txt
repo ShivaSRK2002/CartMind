@@ -1,0 +1,11 @@
+# Local-only: needed to run 02_medallion_pipeline.py on your machine with
+# `pyspark` before uploading to Databricks. Databricks Community Edition
+# already has Spark + Delta Lake installed, so you do NOT install these there.
+pyspark==3.5.1
+pandas>=2.2
+pyarrow>=15.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+# PySpark 3.5 imports distutils, removed from the stdlib in Python 3.12+.
+setuptools<81
+

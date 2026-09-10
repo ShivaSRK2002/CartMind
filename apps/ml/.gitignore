@@ -4,3 +4,5 @@ models/metrics.json
 __pycache__/
 *.pyc
 .env
+databricks/data/
+

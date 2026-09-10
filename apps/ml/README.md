@@ -51,3 +51,11 @@ Or directly: `python apps/ml/pipeline.py train|score|all`.
   `apps/api/src/lib/ml/pythonScores.ts`. The API prefers these when populated and falls
   back to the TS heuristics in `apps/api/src/lib/ml/scoring.ts` otherwise, so Orbit works
   without a Python setup and gets real scores once this pipeline has been run.
+
+## Databricks stage
+
+`databricks/` holds the Bronze → Silver → Gold PySpark pipeline (the
+`PostgreSQL → Databricks` stage of the use-case architecture), built for
+Databricks Community Edition. When its Gold `gold_user_features` table is
+loaded into `ml_user_features`, `score.py` scores from those features
+instead of its own live SQL aggregate. See **[databricks/README.md](databricks/README.md)**.

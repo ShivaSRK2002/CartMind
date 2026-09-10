@@ -76,7 +76,7 @@ cartMindAi/
 │   ├── web/                 # Velora — Next.js 16 storefront (App Router)
 │   ├── admin/               # Orbit — Next.js 16 analytics dashboard
 │   ├── api/                 # Express REST API (auth, catalog, orders, events, ML fallback, Gemini)
-│   └── ml/                  # Python/scikit-learn + XGBoost training & scoring pipeline
+│   └── ml/                  # Python ML: scikit-learn/XGBoost models + Databricks medallion pipeline
 ├── packages/
 │   └── shared-types/        # Events, models, coupons, ML types, API envelope
 ├── db/
@@ -156,6 +156,21 @@ See **[apps/ml/README.md](apps/ml/README.md)** for the full pipeline — how the
 | Conversion | XGBoost | 82.5% | 78.2% | 77.4% | 91.7% |
 
 (Trained on synthetic data — see `apps/ml/src/cartmind_ml/synthetic.py` — then applied to the live Velora database. Re-run `npm run ml:pipeline` to refresh.)
+
+### Databricks pipeline (the `PostgreSQL → Databricks` stage)
+
+`apps/ml/databricks/` is a Bronze → Silver → Gold PySpark medallion pipeline
+built for **Databricks Community Edition**. It turns the raw behavioral
+tables into Gold feature/analytics tables:
+
+| Gold table | Feeds |
+|------------|-------|
+| `gold_user_features` | the Python ML engine — `score.py` reads it from `ml_user_features` when present, else falls back to its own live SQL aggregate |
+| `gold_revenue_daily`, `gold_event_funnel` | Power BI (next milestone) |
+| `gold_product_interactions` | the recommendation engine's interaction matrix |
+
+CE can't reach a local DB or schedule jobs, so it's a file round-trip:
+`npm run ml:export` → upload to CE → run the notebook → download → `python apps/ml/databricks/03_load_gold_to_postgres.py --features <csv>` → `npm run ml:score`. The same transform runs locally (`npm run ml:medallion`) and, unchanged, as a scheduled JDBC Job on a paid workspace. Full walkthrough: **[apps/ml/databricks/README.md](apps/ml/databricks/README.md)**.
 
 ### Orbit insights
 
@@ -263,6 +278,7 @@ npm run dev
 | `npm run db:seed` | Demo users, 30 products, banners, order history |
 | `npm run build` / `lint` / `test` | Workspace-wide |
 | `npm run ml:pipeline` | Train + score the Python ML pipeline (see [apps/ml/README.md](apps/ml/README.md) for setup) |
+| `npm run ml:export` / `ml:medallion` | Export raw tables for Databricks / run the medallion transform locally ([apps/ml/databricks/README.md](apps/ml/databricks/README.md)) |
 
 Postgres defaults: `localhost:5432`, user/password/db `cartmind` / `cartmind` / `cartmind`.
 
@@ -351,6 +367,7 @@ After Render deploy, run migrate + seed in the service shell and set `GEMINI_API
 | `0004_banners` | Promo banners |
 | `0005_product_images` | Product gallery images |
 | `0006_ml_pipeline` | `ml_user_scores`, `ml_product_similarity`, `ml_model_metrics` (written by `apps/ml`) |
+| `0007_ml_features` | `ml_user_features` — Gold feature landing zone from the Databricks pipeline |
 
 ---
 

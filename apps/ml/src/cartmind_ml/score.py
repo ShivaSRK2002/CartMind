@@ -12,7 +12,7 @@ import numpy as np
 from .config import MODEL_VERSION, MODELS_DIR
 from .db import execute, execute_many, get_connection
 from .feature_specs import ABANDON_FEATURES, CHURN_FEATURES, CONVERSION_FEATURES, SEGMENTATION_FEATURES
-from .features_live import fetch_live_user_features
+from .features_live import fetch_gold_user_features, fetch_live_user_features
 from .recommend import compute_product_similarity
 
 
@@ -41,9 +41,14 @@ def _require_models() -> dict:
 
 
 def score_users(conn, models: dict) -> int:
-    df = fetch_live_user_features(conn)
+    df = fetch_gold_user_features(conn)
+    source = "databricks gold"
+    if df.empty:
+        df = fetch_live_user_features(conn)
+        source = "live sql"
     if df.empty:
         return 0
+    print(f"  feature source: {source} ({len(df)} users)")
 
     df["churn_risk"] = models["churn"].predict_proba(df[CHURN_FEATURES])[:, 1] * 100
 

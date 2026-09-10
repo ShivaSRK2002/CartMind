@@ -74,6 +74,45 @@ def fetch_live_user_features(conn) -> pd.DataFrame:
     return df
 
 
+GOLD_FEATURE_COLUMNS = [
+    "order_count",
+    "lifetime_value",
+    "days_since_last_order",
+    "events_30d",
+    "product_views",
+    "add_to_cart",
+    "checkouts_started",
+    "payments",
+    "checkout_abandoned",
+    "wishlist_adds",
+    "days_since_signup",
+    "cart_to_view_ratio",
+    "checkout_to_cart_ratio",
+]
+
+
+def fetch_gold_user_features(conn) -> pd.DataFrame:
+    """Reads features precomputed by the Databricks medallion pipeline
+    (apps/ml/databricks) from ml_user_features. Returns an empty frame when
+    the table is absent or unpopulated so callers fall back to the live query.
+    """
+    try:
+        rows = fetch_dicts(
+            conn,
+            f"SELECT user_id, name, email, {', '.join(GOLD_FEATURE_COLUMNS)} FROM ml_user_features",
+        )
+    except Exception:
+        return pd.DataFrame()
+
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    for col in GOLD_FEATURE_COLUMNS:
+        df[col] = pd.to_numeric(df[col])
+    return df
+
+
 PRODUCT_INTERACTIONS_QUERY = """
 SELECT user_id, product_id, weight FROM (
   SELECT
