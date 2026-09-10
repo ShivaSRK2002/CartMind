@@ -41,7 +41,9 @@ npm run ml:score      # score the live DB, write ml_user_scores / ml_product_sim
 npm run ml:pipeline   # both, in order
 ```
 
-Or directly: `python apps/ml/pipeline.py train|score|all`.
+The `npm run ml:*` scripts auto-detect `apps/ml/.venv` (via `scripts/py.mjs`),
+so you don't need to activate it first. Or run directly with the venv active:
+`python apps/ml/pipeline.py train|score|all`.
 
 ## Output
 

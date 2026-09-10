@@ -18,11 +18,11 @@
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspace=apps/api",
     "screenshots": "node scripts/capture-screenshots.mjs",
-    "ml:train": "python apps/ml/pipeline.py train",
-    "ml:score": "python apps/ml/pipeline.py score",
-    "ml:pipeline": "python apps/ml/pipeline.py all",
-    "ml:export": "python apps/ml/databricks/01_export_from_postgres.py",
-    "ml:medallion": "python apps/ml/databricks/02_medallion_pipeline.py --input apps/ml/databricks/data --output apps/ml/databricks/data/out"
+    "ml:train": "node scripts/py.mjs apps/ml/pipeline.py train",
+    "ml:score": "node scripts/py.mjs apps/ml/pipeline.py score",
+    "ml:pipeline": "node scripts/py.mjs apps/ml/pipeline.py all",
+    "ml:export": "node scripts/py.mjs apps/ml/databricks/01_export_from_postgres.py",
+    "ml:medallion": "node scripts/py.mjs apps/ml/databricks/02_medallion_pipeline.py --input apps/ml/databricks/data --output apps/ml/databricks/data/out"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
