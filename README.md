@@ -166,12 +166,14 @@ It turns the raw behavioral tables into Gold feature/analytics tables:
 | Gold table | Feeds |
 |------------|-------|
 | `gold_user_features` | the Python ML engine — `score.py` reads it from `ml_user_features` when present, else falls back to its own live SQL aggregate |
-| `gold_revenue_daily`, `gold_event_funnel` | Power BI (next milestone) |
+| `gold_revenue_daily`, `gold_event_funnel` | the Databricks AI/BI dashboard (12 widgets, published) |
 | `gold_product_interactions` | the recommendation engine's interaction matrix |
 
 Free Edition can't reach a local DB or schedule JDBC jobs, so it's a file
 round-trip: `npm run ml:export` → upload the parquet to a Unity Catalog
-Volume → run the notebook → download the Gold CSV → `python apps/ml/databricks/03_load_gold_to_postgres.py --features <csv>` → `npm run ml:score`. The same transform runs locally (`npm run ml:medallion`) and, unchanged, as a scheduled JDBC Job on a paid workspace. Full walkthrough: **[apps/ml/databricks/README.md](apps/ml/databricks/README.md)**.
+Volume → run the notebook → download the Gold CSV → `npm run ml:load-gold -- --features <csv>` → `npm run ml:score`. The same transform runs locally (`npm run ml:medallion`) and, unchanged, as a scheduled JDBC Job on a paid workspace.
+
+A **published 12-widget Databricks AI/BI dashboard** ("CartMind") sits on the Gold tables — KPIs, revenue trend, conversion funnel, event mix, customer segmentation, top products. Full walkthrough + dashboard SQL: **[apps/ml/databricks/README.md](apps/ml/databricks/README.md)**.
 
 ### Orbit insights
 

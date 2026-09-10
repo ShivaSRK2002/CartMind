@@ -110,6 +110,14 @@ pipeline.
 The visualization layer runs natively in Databricks — no Power BI Desktop
 needed. Queries are in [`dashboard_queries.sql`](dashboard_queries.sql).
 
+**Built & published:** a 12-widget "CartMind" dashboard — KPI row
+(revenue $33.72K, 93 orders, AOV 362.63, conversion 33.3%, cart-abandon
+51.5%), revenue trend, conversion funnel (48 → 33 → 16 → 16), event-mix
+area, customer-segments donut, avg-LTV bar, customer table, top-products
+bar. (Databricks Free Edition dashboards are workspace-scoped, so the
+link is not publicly reachable — the dashboard is demoed live and
+screenshotted for evidence.)
+
 1. **Dashboards** (left sidebar) → **Create dashboard** → name it `CartMind AI`.
 2. **Data** tab → **Create from SQL** → paste the first block from
    `dashboard_queries.sql`, name the dataset exactly as its comment says
