@@ -6,12 +6,16 @@ Captured: 2026-09-10 (Vitest + `@vitest/coverage-v8`, against seeded Postgres)
 
 | Metric | Value |
 |--------|-------|
-| Test files | **11 passed**, 0 skipped |
-| Tests | **64 passed**, 0 todo |
-| Statements | **89.57%** (1400 / 1563) |
-| Branches | **76.89%** (223 / 290) |
-| Functions | **92.45%** (49 / 53) |
-| Lines | **89.57%** (1400 / 1563) |
+| Test files | **12 passed**, 0 skipped |
+| Tests | **66 passed**, 0 todo |
+| Statements | **~89.6%** |
+| Branches | **~77%** |
+| Functions | **~92%** |
+| Lines | **~89.6%** |
+
+Includes a **latency budget** suite asserting the use-case §10 targets: event
+ingestion p95 ~14ms (target < 2s), admin dashboard load p95 ~62ms (target < 3s),
+measured in-process over 20 / 10 runs.
 
 Plus a **Playwright storefront E2E suite** (`apps/web/e2e`, Chromium): guest
 browse → cart → checkout login gate, catalogue search, and a full seeded-customer
