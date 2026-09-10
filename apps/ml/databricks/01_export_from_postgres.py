@@ -1,23 +1,26 @@
 """Step 1 (run locally) — dump the raw tables Databricks needs.
 
-Databricks Community Edition cannot reach a database on your laptop, so the
-pipeline is file-based: export here, upload the files to CE, run the
-notebook, download the Gold output, load it back (step 3).
+Databricks Free Edition cannot reach a database on your laptop, so the
+pipeline is file-based: export here, upload the files to a Unity Catalog
+Volume, run the notebook, download the Gold output, load it back (step 3).
 
     python apps/ml/databricks/01_export_from_postgres.py
 
 Writes Parquet files to apps/ml/databricks/data/raw/ and bundles them into
-apps/ml/databricks/data/cartmind_raw.zip for a single upload to CE
-(Data > Add > Upload File, or Workspace > FileStore).
+apps/ml/databricks/data/cartmind_raw.zip. Upload the .parquet files to the
+`raw/` folder of the `cartmind` Volume (Catalog > workspace > default).
 """
 
 from __future__ import annotations
 
 import sys
+import warnings
 import zipfile
 from pathlib import Path
 
 import pandas as pd
+
+warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
@@ -55,7 +58,7 @@ def main() -> None:
         for path in written:
             zf.write(path, arcname=f"raw/{path.name}")
     print(f"\nBundled -> {bundle}")
-    print("Upload that zip (or the individual .parquet files) to Databricks CE.")
+    print("Upload the .parquet files to /Volumes/workspace/default/cartmind/raw/ in Databricks.")
 
 
 if __name__ == "__main__":

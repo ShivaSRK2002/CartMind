@@ -8,10 +8,12 @@
 # MAGIC builds the analytics/feature tables the Python ML engine and Power BI
 # MAGIC consume (Gold).
 # MAGIC
-# MAGIC **Community Edition:** import this file as a notebook
-# MAGIC (Workspace ▸ Import), upload `cartmind_raw.zip` contents to
-# MAGIC `/FileStore/cartmind/raw/`, then run. Gold CSVs land in
-# MAGIC `/FileStore/cartmind/gold_csv/` for download.
+# MAGIC **Databricks (Free Edition / serverless):** import this file as a
+# MAGIC notebook (Workspace ▸ Import). Create a Volume `cartmind` under
+# MAGIC `workspace.default` and upload the five `*.parquet` files to its
+# MAGIC `raw/` folder. Attach to *Default Interactive Compute* and Run All.
+# MAGIC Gold lands as tables in `workspace.default.gold_*` and as CSVs in
+# MAGIC `/Volumes/workspace/default/cartmind/out/` for download.
 # MAGIC
 # MAGIC **Locally:** `python 02_medallion_pipeline.py --input apps/ml/databricks/data --output apps/ml/databricks/data/out`
 
@@ -241,27 +243,28 @@ def build_gold(silver: dict[str, DataFrame]) -> dict[str, DataFrame]:
 
 
 def write_outputs(gold: dict[str, DataFrame], output_path: str, engine: str = "spark") -> None:
-    if engine == "pandas":
-        # Local Windows: Spark's Hadoop file writer needs winutils.exe, so
-        # materialize via the driver instead. Produces one CSV per table.
-        import pathlib
-
-        csv_dir = pathlib.Path(output_path) / "gold_csv"
-        csv_dir.mkdir(parents=True, exist_ok=True)
+    if engine == "databricks":
+        # Free Edition / serverless: managed Delta tables for SQL + Power BI,
+        # plus one CSV per table in the Volume for download / loading back.
+        os.makedirs(output_path, exist_ok=True)
         for name, df in gold.items():
-            pdf = df.toPandas()
-            pdf.to_csv(csv_dir / f"{name}.csv", index=False)
-            print(f"  {name:<26} {len(pdf):>6} rows -> gold_csv/{name}.csv")
+            df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(
+                f"{DATABRICKS_SCHEMA}.{name}"
+            )
+            df.toPandas().to_csv(f"{output_path}/{name}.csv", index=False)
+            print(f"  {DATABRICKS_SCHEMA}.{name:<26} -> table + {name}.csv")
         return
 
+    # Local: Spark's Hadoop file writer needs winutils.exe on Windows, so
+    # materialize via the driver instead. One CSV per table.
+    import pathlib
+
+    csv_dir = pathlib.Path(output_path) / "gold_csv"
+    csv_dir.mkdir(parents=True, exist_ok=True)
     for name, df in gold.items():
-        df.write.format("delta").mode("overwrite").option(
-            "overwriteSchema", "true"
-        ).save(f"{output_path}/gold/{name}")
-        df.coalesce(1).write.mode("overwrite").option("header", "true").csv(
-            f"{output_path}/gold_csv/{name}"
-        )
-        print(f"  {name:<26} {df.count():>6} rows")
+        pdf = df.toPandas()
+        pdf.to_csv(csv_dir / f"{name}.csv", index=False)
+        print(f"  {name:<26} {len(pdf):>6} rows -> gold_csv/{name}.csv")
 
 
 # COMMAND ----------
@@ -269,7 +272,7 @@ def write_outputs(gold: dict[str, DataFrame], output_path: str, engine: str = "s
 
 
 def run_pipeline(
-    spark: SparkSession, input_path: str, output_path: str, engine: str = "spark"
+    spark: SparkSession, input_path: str, output_path: str, engine: str = "pandas"
 ) -> dict[str, DataFrame]:
     bronze = read_bronze(spark, input_path)
     silver = build_silver(bronze)
@@ -280,15 +283,14 @@ def run_pipeline(
 
 # COMMAND ----------
 
-# Databricks: set these to your FileStore paths and run all.
-DBFS_INPUT = "dbfs:/FileStore/cartmind"
-DBFS_OUTPUT = "dbfs:/FileStore/cartmind/out"
+# Databricks Free Edition — Unity Catalog Volume + schema. Change these if
+# you used a different catalog/schema/volume name.
+DATABRICKS_SCHEMA = "workspace.default"
+VOLUME_BASE = "/Volumes/workspace/default/cartmind"
 
 if _in_databricks():
-    run_pipeline(spark, DBFS_INPUT, DBFS_OUTPUT)  # noqa: F821
-    display(  # noqa: F821
-        spark.read.format("delta").load(f"{DBFS_OUTPUT}/gold/gold_user_features")  # noqa: F821
-    )
+    run_pipeline(spark, f"{VOLUME_BASE}", f"{VOLUME_BASE}/out", engine="databricks")  # noqa: F821
+    display(spark.table(f"{DATABRICKS_SCHEMA}.gold_user_features"))  # noqa: F821
 
 
 # COMMAND ----------
@@ -299,7 +301,7 @@ if __name__ == "__main__" and not _in_databricks():
     parser.add_argument("--output", required=True, help="dir for gold_csv/ output")
     parser.add_argument(
         "--engine",
-        choices=["spark", "pandas"],
+        choices=["pandas", "databricks"],
         default="pandas",
         help="pandas (default) avoids the winutils.exe requirement on Windows",
     )

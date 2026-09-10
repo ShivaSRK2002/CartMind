@@ -160,8 +160,8 @@ See **[apps/ml/README.md](apps/ml/README.md)** for the full pipeline — how the
 ### Databricks pipeline (the `PostgreSQL → Databricks` stage)
 
 `apps/ml/databricks/` is a Bronze → Silver → Gold PySpark medallion pipeline
-built for **Databricks Community Edition**. It turns the raw behavioral
-tables into Gold feature/analytics tables:
+built for **Databricks Free Edition** (serverless — no cluster to create).
+It turns the raw behavioral tables into Gold feature/analytics tables:
 
 | Gold table | Feeds |
 |------------|-------|
@@ -169,8 +169,9 @@ tables into Gold feature/analytics tables:
 | `gold_revenue_daily`, `gold_event_funnel` | Power BI (next milestone) |
 | `gold_product_interactions` | the recommendation engine's interaction matrix |
 
-CE can't reach a local DB or schedule jobs, so it's a file round-trip:
-`npm run ml:export` → upload to CE → run the notebook → download → `python apps/ml/databricks/03_load_gold_to_postgres.py --features <csv>` → `npm run ml:score`. The same transform runs locally (`npm run ml:medallion`) and, unchanged, as a scheduled JDBC Job on a paid workspace. Full walkthrough: **[apps/ml/databricks/README.md](apps/ml/databricks/README.md)**.
+Free Edition can't reach a local DB or schedule JDBC jobs, so it's a file
+round-trip: `npm run ml:export` → upload the parquet to a Unity Catalog
+Volume → run the notebook → download the Gold CSV → `python apps/ml/databricks/03_load_gold_to_postgres.py --features <csv>` → `npm run ml:score`. The same transform runs locally (`npm run ml:medallion`) and, unchanged, as a scheduled JDBC Job on a paid workspace. Full walkthrough: **[apps/ml/databricks/README.md](apps/ml/databricks/README.md)**.
 
 ### Orbit insights
 

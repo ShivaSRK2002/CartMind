@@ -1,16 +1,17 @@
 # CartMind AI — Databricks pipeline
 
 The `PostgreSQL → Databricks Data Pipeline` stage of the use-case
-architecture, built for **Databricks Community Edition**. A medallion
-(Bronze → Silver → Gold) PySpark job turns the raw behavioral tables into
-the feature and analytics tables the Python ML engine and Power BI consume.
+architecture, built for **Databricks Free Edition** (serverless — no cluster
+to create). A medallion (Bronze → Silver → Gold) PySpark job turns the raw
+behavioral tables into the feature and analytics tables the Python ML engine
+and Power BI consume.
 
 ```
-Postgres ──(01 export)──> parquet ──upload──> Databricks CE
-                                                   │  02 medallion notebook
+Postgres ──(01 export)──> parquet ──upload──> Databricks Free Edition
+                                                   │  02 medallion notebook (serverless)
                                                    ▼
-                                          Bronze → Silver → Gold (Delta)
-                                                   │  gold_csv/*
+                                    Bronze → Silver → Gold  (workspace.default.gold_*)
+                                                   │  /Volumes/.../out/*.csv
                                           download ▼
 Postgres  <──(03 load)── gold_user_features.csv
    │
@@ -19,12 +20,12 @@ Postgres  <──(03 load)── gold_user_features.csv
 
 ## Why file-based
 
-Community Edition clusters run in Databricks' cloud and **cannot reach a
-database on your machine**, and CE has no Jobs scheduler or external-storage
-mounts. So the pipeline round-trips through files: export locally, upload,
-run, download, load. On a paid workspace you'd instead read/write Postgres
+Free Edition runs in Databricks' cloud and **cannot reach a database on your
+machine**, and it has no Jobs-over-JDBC or cross-account networking. So the
+pipeline round-trips through files: export locally, upload to a Volume, run,
+download, load. On a paid workspace you'd instead read/write Postgres
 directly over JDBC and schedule `02_medallion_pipeline.py` as a Job — the
-transform code is identical.
+transform code (`build_silver` / `build_gold`) is identical.
 
 ## Gold tables produced
 
@@ -48,7 +49,7 @@ pip install -r databricks/requirements.txt      # pyspark, local only
 ### 1. Export raw tables (local)
 
 ```bash
-python apps/ml/databricks/01_export_from_postgres.py
+npm run ml:export        # = python apps/ml/databricks/01_export_from_postgres.py
 ```
 
 Produces `apps/ml/databricks/data/raw/*.parquet` and `data/cartmind_raw.zip`.
@@ -58,33 +59,41 @@ pandas writer (no `winutils.exe` needed on Windows) and drops one CSV per
 Gold table under `data/out/gold_csv/`:
 
 ```bash
-python apps/ml/databricks/02_medallion_pipeline.py \
-  --input apps/ml/databricks/data --output apps/ml/databricks/data/out
+npm run ml:medallion
 ```
 
-### 2. Databricks Community Edition
+### 2. Databricks Free Edition
 
-1. Sign up / log in at <https://community.cloud.databricks.com>.
-2. **Compute ▸ Create Cluster** (defaults are fine — single node, latest LTS runtime). Wait for it to start.
-3. **Catalog ▸ (DBFS) ▸ Upload** — or the *Data* page — put the five `.parquet` files under `dbfs:/FileStore/cartmind/raw/`.
-4. **Workspace ▸ Import ▸ File** — import `02_medallion_pipeline.py` (it imports as a notebook).
-5. Attach the notebook to the cluster, confirm `DBFS_INPUT` / `DBFS_OUTPUT` near the bottom, **Run All**.
-6. The last cell displays `gold_user_features`. Download the CSV from
-   `dbfs:/FileStore/cartmind/out/gold_csv/gold_user_features/` — its part
-   file is served at
-   `https://community.cloud.databricks.com/files/cartmind/out/gold_csv/gold_user_features/part-00000-....csv`.
+You're on serverless — **there is no cluster to create**. "Default
+Interactive Compute" in *Compute* is what the notebook uses.
+
+1. Log in at <https://free.databricks.com> (the workspace whose sidebar has
+   *Catalog*, *Jobs & Pipelines*, *Compute*).
+2. **Catalog** → expand the `workspace` catalog → `default` schema →
+   **Create ▸ Volume**, name it `cartmind`. That is
+   `/Volumes/workspace/default/cartmind/`.
+3. Open the `cartmind` volume → **Upload to this volume** → create a folder
+   `raw` and drop in the five `.parquet` files from step 1.
+4. **Workspace** → **Import** → *File* → pick `02_medallion_pipeline.py`
+   (imports as a notebook).
+5. Open it, top-left **Connect** → *Default Interactive Compute*. If you used
+   a different catalog/schema/volume, edit `DATABRICKS_SCHEMA` /
+   `VOLUME_BASE` near the bottom. **Run all**.
+6. It writes tables `workspace.default.gold_user_features` etc. (browse them
+   under *Catalog*) and CSVs to `/Volumes/workspace/default/cartmind/out/`.
+   The last cell displays `gold_user_features`.
+7. **Catalog** → `cartmind` volume → `out/` → download `gold_user_features.csv`.
 
 ### 3. Load Gold back into Postgres (local)
 
 ```bash
-# from Databricks CE download:
-python apps/ml/databricks/03_load_gold_to_postgres.py --features ~/Downloads/part-00000-xxxx.csv
-# or from a local dry-run:
+python apps/ml/databricks/03_load_gold_to_postgres.py --features ~/Downloads/gold_user_features.csv
+# or, from a local dry-run:
 python apps/ml/databricks/03_load_gold_to_postgres.py --features apps/ml/databricks/data/out/gold_csv/gold_user_features.csv
 npm run ml:score
 ```
 
-`score.py` now prints `feature source: databricks gold` and scores users
+`score.py` then prints `feature source: databricks gold` and scores users
 from the Databricks-computed features. If `ml_user_features` is empty it
 silently falls back to the live SQL aggregate, so nothing breaks without this
 pipeline.
@@ -94,5 +103,5 @@ pipeline.
 | File | Runs on | Purpose |
 |------|---------|---------|
 | `01_export_from_postgres.py` | local | Postgres → parquet + zip |
-| `02_medallion_pipeline.py` | Databricks **or** local `pyspark` | Bronze → Silver → Gold |
+| `02_medallion_pipeline.py` | Databricks (serverless) **or** local `pyspark` | Bronze → Silver → Gold |
 | `03_load_gold_to_postgres.py` | local | `gold_user_features.csv` → `ml_user_features` |
