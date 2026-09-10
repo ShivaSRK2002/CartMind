@@ -48,11 +48,11 @@ Orbit (Next.js)   ──►       ▲
 
 | Metric | Result |
 |--------|--------|
-| Tests | **15 passed** (32 todo stubs skipped) |
-| Statements | **54.48%** |
-| Branches | **63.82%** |
-| Functions | **69.38%** |
-| Lines | **54.48%** |
+| Tests | **52 passed** (0 skipped, 0 todo) |
+| Statements | **78.22%** |
+| Branches | **71.48%** |
+| Functions | **84.61%** |
+| Lines | **78.22%** |
 
 Details: [docs/screenshots/COVERAGE.md](docs/screenshots/COVERAGE.md). Re-capture UI shots with apps running: `npm run screenshots`.
 
@@ -340,7 +340,7 @@ npm run db:migrate && npm run db:seed
 npm run test:coverage
 ```
 
-Latest captured metrics (also in [docs/screenshots/COVERAGE.md](docs/screenshots/COVERAGE.md)): **15 passed**, **54.48%** line coverage.
+Latest captured metrics (also in [docs/screenshots/COVERAGE.md](docs/screenshots/COVERAGE.md)): **52 passed**, **78.22%** line coverage.
 
 CI (`.github/workflows/ci.yml`) on push/PR: install, build shared types, migrate/seed Postgres, build apps, API integration tests, lint.
 
