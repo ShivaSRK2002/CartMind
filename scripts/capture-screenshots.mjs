@@ -76,6 +76,16 @@ async function main() {
   await page.waitForTimeout(700);
   await shot(page, "orbit-dashboard-panels");
 
+  // Engagement heatmap + session-depth funnel panel
+  await page.evaluate(() => {
+    const h = [...document.querySelectorAll("h3")].find((el) =>
+      el.textContent?.includes("Engagement"),
+    );
+    h?.scrollIntoView({ block: "start" });
+  });
+  await page.waitForTimeout(700);
+  await shot(page, "orbit-engagement-panel");
+
   await browser.close();
   console.log("All screenshots captured.");
 }
