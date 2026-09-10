@@ -7,6 +7,7 @@ import {
 } from "../lib/stores";
 import {
   fetchCustomers,
+  fetchEngagement,
   fetchLiveEvents,
   fetchLiveKpis,
   fetchRevenueTrend,
@@ -36,11 +37,12 @@ export async function buildStoreDashboard(storeId: string): Promise<StoreDashboa
     };
   }
 
-  const [customers, kpis, events, revenueTrend, mlPipeline] = await Promise.all([
+  const [customers, kpis, events, revenueTrend, engagement, mlPipeline] = await Promise.all([
     fetchCustomers(),
     fetchLiveKpis(),
     fetchLiveEvents(),
     fetchRevenueTrend(),
+    fetchEngagement(),
     resolveMlPipeline(),
   ]);
 
@@ -52,5 +54,6 @@ export async function buildStoreDashboard(storeId: string): Promise<StoreDashboa
     revenueTrend,
     customers,
     ml: mlPipeline.ml,
+    engagement,
   };
 }

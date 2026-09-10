@@ -60,6 +60,22 @@ describeIfDb("Admin routes", () => {
     expect(res.body.data.cohorts.length).toBe(4);
   });
 
+  it("GET /admin/dashboard/velora includes the engagement heatmap and depth funnel", async () => {
+    const res = await api()
+      .get("/api/v1/admin/dashboard/velora")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+
+    const eng = res.body.data.engagement;
+    expect(Array.isArray(eng.heatmap)).toBe(true);
+    expect(eng.heatmap.length).toBeGreaterThan(0);
+    expect(eng.heatmap[0]).toHaveProperty("intensity");
+    expect(eng.heatmap[0].intensity).toBeGreaterThanOrEqual(0);
+    expect(eng.heatmap[0].intensity).toBeLessThanOrEqual(1);
+    expect(eng.depthFunnel.map((s: { stage: string }) => s.stage)).toContain("Completed purchase");
+    expect(eng.avgEventsPerSession).toBeGreaterThan(0);
+  });
+
   it("GET /admin/dashboard/:unknown returns 404", async () => {
     await api()
       .get("/api/v1/admin/dashboard/nope")

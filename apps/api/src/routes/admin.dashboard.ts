@@ -2,6 +2,7 @@ import type {
   AdminCustomerSummary,
   BehavioralEventName,
   DashboardKpis,
+  EngagementInsights,
   EventMetric,
   RevenueTrendPoint,
 } from "cartmind-shared-types";
@@ -130,6 +131,99 @@ export async function fetchLiveEvents(): Promise<EventMetric[]> {
     const trendPct = prev > 0 ? Math.round(((count - prev) / prev) * 100) : count > 0 ? 100 : 0;
     return { eventType, count, trendPct };
   });
+}
+
+/**
+ * On-site engagement analytics derived from the raw behavioral event stream:
+ *  - a catalogue heatmap (per-product view / cart / purchase density), and
+ *  - an engagement-depth funnel — the share of sessions that progress from a
+ *    product view through to a purchase (a proxy for scroll / attention depth).
+ */
+export async function fetchEngagement(): Promise<EngagementInsights> {
+  const heatResult = await pool.query<{
+    product_id: string;
+    name: string;
+    category: string;
+    views: string;
+    add_to_carts: string;
+    purchases: string;
+  }>(
+    `WITH ev AS (
+       SELECT payload->>'productId' AS product_id, event_type
+       FROM events
+       WHERE occurred_at >= now() - interval '30 days'
+         AND payload ? 'productId'
+     )
+     SELECT p.id AS product_id, p.name, p.category,
+            count(*) FILTER (WHERE ev.event_type = 'product_viewed') AS views,
+            count(*) FILTER (WHERE ev.event_type = 'add_to_cart')    AS add_to_carts,
+            COALESCE(pur.qty, 0) AS purchases
+     FROM products p
+     LEFT JOIN ev ON ev.product_id = p.id::text
+     LEFT JOIN (
+       SELECT oi.product_id, SUM(oi.quantity) AS qty
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id AND o.status = 'paid'
+       GROUP BY oi.product_id
+     ) pur ON pur.product_id = p.id
+     GROUP BY p.id, p.name, p.category, pur.qty
+     ORDER BY views DESC, purchases DESC
+     LIMIT 24`,
+  );
+
+  const maxViews = Math.max(1, ...heatResult.rows.map((r) => Number(r.views)));
+  const heatmap = heatResult.rows.map((r) => ({
+    productId: r.product_id,
+    name: r.name,
+    category: r.category,
+    views: Number(r.views),
+    addToCarts: Number(r.add_to_carts),
+    purchases: Number(r.purchases),
+    intensity: Number((Number(r.views) / maxViews).toFixed(3)),
+  }));
+
+  const funnelResult = await pool.query<{
+    viewed: string;
+    carted: string;
+    checkout: string;
+    purchased: string;
+  }>(
+    `SELECT
+       count(DISTINCT session_id) FILTER (WHERE event_type = 'product_viewed')   AS viewed,
+       count(DISTINCT session_id) FILTER (WHERE event_type = 'add_to_cart')      AS carted,
+       count(DISTINCT session_id) FILTER (WHERE event_type = 'checkout_started') AS checkout,
+       count(DISTINCT session_id) FILTER (WHERE event_type = 'payment_success')  AS purchased
+     FROM events
+     WHERE occurred_at >= now() - interval '30 days'`,
+  );
+  const f = funnelResult.rows[0] ?? { viewed: "0", carted: "0", checkout: "0", purchased: "0" };
+  const entry = Math.max(1, Number(f.viewed));
+  const depthFunnel = [
+    { stage: "Viewed a product", sessions: Number(f.viewed) },
+    { stage: "Added to cart", sessions: Number(f.carted) },
+    { stage: "Started checkout", sessions: Number(f.checkout) },
+    { stage: "Completed purchase", sessions: Number(f.purchased) },
+  ].map((s) => ({ ...s, pctOfEntry: Number(((s.sessions / entry) * 100).toFixed(1)) }));
+
+  const depthResult = await pool.query<{ avg: string | null; median: string | null }>(
+    `WITH per_session AS (
+       SELECT session_id, count(*) AS depth
+       FROM events
+       WHERE occurred_at >= now() - interval '30 days'
+       GROUP BY session_id
+     )
+     SELECT AVG(depth) AS avg,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY depth) AS median
+     FROM per_session`,
+  );
+  const d = depthResult.rows[0] ?? { avg: "0", median: "0" };
+
+  return {
+    heatmap,
+    depthFunnel,
+    avgEventsPerSession: Number(Number(d.avg ?? 0).toFixed(1)),
+    medianSessionDepth: Number(Number(d.median ?? 0).toFixed(1)),
+  };
 }
 
 export async function fetchRevenueTrend(): Promise<RevenueTrendPoint[]> {

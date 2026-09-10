@@ -7,11 +7,16 @@ Captured: 2026-09-10 (Vitest + `@vitest/coverage-v8`, against seeded Postgres)
 | Metric | Value |
 |--------|-------|
 | Test files | **11 passed**, 0 skipped |
-| Tests | **63 passed**, 0 todo |
-| Statements | **89.31%** (1362 / 1525) |
-| Branches | **77.14%** (216 / 280) |
-| Functions | **92.30%** (48 / 52) |
-| Lines | **89.31%** (1362 / 1525) |
+| Tests | **64 passed**, 0 todo |
+| Statements | **89.57%** (1400 / 1563) |
+| Branches | **76.89%** (223 / 290) |
+| Functions | **92.45%** (49 / 53) |
+| Lines | **89.57%** (1400 / 1563) |
+
+Plus a **Playwright storefront E2E suite** (`apps/web/e2e`, Chromium): guest
+browse → cart → checkout login gate, catalogue search, and a full seeded-customer
+purchase (sign in → add to bag → multi-step checkout → order confirmation,
+writing a real order to Postgres). Runs as its own CI job.
 
 ## Coverage by area
 
@@ -28,7 +33,7 @@ Captured: 2026-09-10 (Vitest + `@vitest/coverage-v8`, against seeded Postgres)
 | `auth.route.integration.test.ts` | 9 — register/login/me, 401/403/409 paths |
 | `products.route.integration.test.ts` | 11 — list/paginate/filter/search, detail, recommendations (seeded + personalized + 400) |
 | `orders.route.integration.test.ts` | 7 — create (coupon, stock, 400/401), me, by id, 404 |
-| `admin.route.integration.test.ts` | 12 — stores, customers, live + demo dashboards, insights chat, RBAC (401/403) |
+| `admin.route.integration.test.ts` | 13 — stores, customers, live + demo dashboards, engagement heatmap/funnel, insights chat, RBAC (401/403) |
 | `events.route.integration.test.ts` | 11 — single + batch ingest, validation, bad timestamp, auth attach |
 | `pipeline.integration.test.ts` | 3 — end-to-end ML/dashboard |
 | `health.route*.test.ts` | 6 — basic, verbose, invalid query |

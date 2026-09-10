@@ -9,6 +9,7 @@ import { EventBreakdown } from "@/components/EventBreakdown";
 import { SegmentationPanel } from "@/components/SegmentationPanel";
 import { AIInsightPanel } from "@/components/AIInsightPanel";
 import { MlScoresPanel } from "@/components/MlScoresPanel";
+import { EngagementPanel } from "@/components/EngagementPanel";
 import { CustomerTable } from "@/components/CustomerTable";
 import { LogoutButton } from "@/components/LogoutButton";
 
@@ -119,6 +120,7 @@ export function DashboardView({ adminName }: DashboardViewProps) {
                 <RevenueChart data={dashboard.revenueTrend} accentColor={dashboard.store.accentColor} />
                 {dashboard.ml && <MlScoresPanel ml={dashboard.ml} />}
                 <SegmentationPanel cohorts={dashboard.cohorts} />
+                {dashboard.engagement && <EngagementPanel engagement={dashboard.engagement} />}
                 <CustomerTable customers={dashboard.customers} />
               </div>
               <div className="space-y-6">

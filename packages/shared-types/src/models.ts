@@ -142,6 +142,32 @@ export interface RevenueTrendPoint {
   value: number;
 }
 
+/** One product cell in the catalogue engagement heatmap. */
+export interface EngagementHeatCell {
+  productId: string;
+  name: string;
+  category: string;
+  views: number;
+  addToCarts: number;
+  purchases: number;
+  /** 0–1, views scaled against the hottest product — drives the cell colour. */
+  intensity: number;
+}
+
+/** One stage of the on-site engagement-depth funnel (a scroll-depth proxy). */
+export interface EngagementFunnelStage {
+  stage: string;
+  sessions: number;
+  pctOfEntry: number;
+}
+
+export interface EngagementInsights {
+  heatmap: EngagementHeatCell[];
+  depthFunnel: EngagementFunnelStage[];
+  avgEventsPerSession: number;
+  medianSessionDepth: number;
+}
+
 export interface StoreDashboard {
   store: EcommerceStore;
   kpis: DashboardKpis;
@@ -150,6 +176,7 @@ export interface StoreDashboard {
   revenueTrend: RevenueTrendPoint[];
   customers: AdminCustomerSummary[];
   ml?: StoreMlInsights;
+  engagement?: EngagementInsights;
 }
 
 export interface EventRecord {
