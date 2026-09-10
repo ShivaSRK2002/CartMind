@@ -31,7 +31,9 @@ RAW_TABLES = ["users", "products", "orders", "order_items", "events"]
 
 
 def _in_databricks() -> bool:
-    return "DATABRICKS_RUNTIME_VERSION" in os.environ
+    # `spark` is pre-injected into every Databricks notebook (classic and
+    # serverless / Free Edition); the env var is only set on classic runtimes.
+    return "spark" in globals() or "DATABRICKS_RUNTIME_VERSION" in os.environ
 
 
 # COMMAND ----------
@@ -246,13 +248,20 @@ def write_outputs(gold: dict[str, DataFrame], output_path: str, engine: str = "s
     if engine == "databricks":
         # Free Edition / serverless: managed Delta tables for SQL + Power BI,
         # plus one CSV per table in the Volume for download / loading back.
-        os.makedirs(output_path, exist_ok=True)
+        try:
+            os.makedirs(output_path, exist_ok=True)
+        except OSError:
+            pass
         for name, df in gold.items():
             df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(
                 f"{DATABRICKS_SCHEMA}.{name}"
             )
-            df.toPandas().to_csv(f"{output_path}/{name}.csv", index=False)
-            print(f"  {DATABRICKS_SCHEMA}.{name:<26} -> table + {name}.csv")
+            try:
+                df.toPandas().to_csv(f"{output_path}/{name}.csv", index=False)
+                extra = f"+ {name}.csv"
+            except OSError:
+                extra = "(CSV skipped — download from the table grid below)"
+            print(f"  {DATABRICKS_SCHEMA}.{name:<26} -> table {extra}")
         return
 
     # Local: Spark's Hadoop file writer needs winutils.exe on Windows, so

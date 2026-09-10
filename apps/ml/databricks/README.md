@@ -78,11 +78,18 @@ Interactive Compute" in *Compute* is what the notebook uses.
    (imports as a notebook).
 5. Open it, top-left **Connect** → *Default Interactive Compute*. If you used
    a different catalog/schema/volume, edit `DATABRICKS_SCHEMA` /
-   `VOLUME_BASE` near the bottom. **Run all**.
+   `VOLUME_BASE` near the bottom. Click **Run all** (running a single cell on
+   its own fails — the later cells need the functions defined by the earlier
+   ones).
 6. It writes tables `workspace.default.gold_user_features` etc. (browse them
-   under *Catalog*) and CSVs to `/Volumes/workspace/default/cartmind/out/`.
-   The last cell displays `gold_user_features`.
-7. **Catalog** → `cartmind` volume → `out/` → download `gold_user_features.csv`.
+   under *Catalog*) and, if the Volume is writable, CSVs to
+   `/Volumes/workspace/default/cartmind/out/`. The last cell displays
+   `gold_user_features`.
+7. Get the CSV out either way:
+   - **From the table grid:** on the `gold_user_features` output of the last
+     cell, click the download ⤓ icon → *Download full results* → CSV.
+   - **Or from the Volume:** **Catalog** → `cartmind` → `out/` →
+     `gold_user_features.csv` → download.
 
 ### 3. Load Gold back into Postgres (local)
 
